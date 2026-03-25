@@ -1,21 +1,4 @@
-# CircleAI – Hackathon Starter Kit
-
-## Quick Start
-
-```bash
-npm install
-cp .env.example .env    # then fill in your Supabase keys
-npm run dev
-```
-
-## Supabase Setup (do this BEFORE the hackathon)
-
-1. Create a project at https://supabase.com
-2. Go to **Authentication → Providers → Google** → Enable it
-3. Add your Google OAuth credentials (from Google Cloud Console)
-4. Set Redirect URL in Google Console: `http://localhost:5173`
-5. Copy your Project URL + Anon Key into `.env`
-
+# CircleAI 
 ## File Structure
 
 ```
