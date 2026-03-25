@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../src/lib/supabaseClient'
 
 // ─── Swap these nav items based on which PS you get ────────────────────────────
 // ML PS 1 (Traceability):    Overview, Material Flow, Reports, Settings
