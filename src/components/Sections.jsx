@@ -7,14 +7,14 @@ export function FeaturesSection() {
   const inView = useInView(ref, { once: true, margin: '-80px' })
 
   const features = [
-    { icon: '🎯', title: 'Real-Time Detection', desc: 'Sub-200ms inference on live CCTV streams. Frame-level accuracy.' },
-    { icon: '📊', title: 'Risk Scoring', desc: 'Dynamic risk score per worker. Pattern-based, not binary.' },
+    { icon: '⟳', title: 'Real-Time Detection', desc: 'Sub-200ms inference on live CCTV streams. Frame-level accuracy.' },
+    { icon: '◬', title: 'Risk Scoring', desc: 'Dynamic risk score per worker. Pattern-based, not binary.' },
     { icon: '🗺', title: 'Zone-Based Alerts', desc: 'Different PPE rules enforced per physical zone automatically.' },
     { icon: '⏱', title: 'Temporal Tracking', desc: 'Behavioural patterns over time — not just single-frame analysis.' },
-    { icon: '💡', title: 'Lighting Adaptive', desc: 'Reliable inference in dark, dim, or overexposed environments.' },
-    { icon: '🔒', title: 'Privacy First', desc: 'Zero facial recognition. Workers are anonymous. Always.' },
-    { icon: '⚡', title: 'Edge Deployable', desc: 'Runs on-device. No cloud dependency for core detection.' },
-    { icon: '🔔', title: 'Multi-Channel Alerts', desc: 'Dashboard, SMS, alarm, and webhook integrations built-in.' },
+    { icon: '◑', title: 'Lighting Adaptive', desc: 'Reliable inference in dark, dim, or overexposed environments.' },
+    { icon: '◆', title: 'Privacy First', desc: 'Zero facial recognition. Workers are anonymous. Always.' },
+    { icon: '⬡', title: 'Edge Deployable', desc: 'Runs on-device. No cloud dependency for core detection.' },
+    { icon: '◈', title: 'Multi-Channel Alerts', desc: 'Dashboard, SMS, alarm, and webhook integrations built-in.' },
   ]
 
   return (
