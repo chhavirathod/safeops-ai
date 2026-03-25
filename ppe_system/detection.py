@@ -48,6 +48,7 @@ class YoloPpeDetector:
         self.device = resolve_device(config.device)
         self.model = YOLO(str(model_path))
         self.model.to(self.device)
+        self.allowed_class_ids = self._resolve_allowed_class_ids()
 
     def infer(self, frame) -> tuple[list[DetectionBox], list[DetectionBox]]:
         result = self.model.predict(
@@ -55,6 +56,8 @@ class YoloPpeDetector:
             conf=self.config.confidence,
             imgsz=self.config.image_size,
             device=self.device,
+            classes=self.allowed_class_ids or None,
+            half=self.device.startswith("cuda"),
             verbose=False,
         )[0]
 
@@ -89,6 +92,20 @@ class YoloPpeDetector:
                 ppe.append(detection)
 
         return people, ppe
+
+    def _resolve_allowed_class_ids(self) -> list[int]:
+        names = self.model.names
+        if isinstance(names, list):
+            indexed_names = enumerate(names)
+        else:
+            indexed_names = names.items()
+
+        allowed_ids: list[int] = []
+        for cls_idx, raw_name in indexed_names:
+            canonical_name = CLASS_NAME_MAP.get(normalize_class_name(str(raw_name)), "")
+            if canonical_name in self.config.classes_of_interest:
+                allowed_ids.append(int(cls_idx))
+        return allowed_ids
 
 
 def run_yolo_detection(frame, detector: YoloPpeDetector) -> tuple[list[DetectionBox], list[DetectionBox]]:

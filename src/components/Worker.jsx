@@ -431,6 +431,7 @@ export default function Worker({
     workerIndex = 0,
     obstacles = [],
     ppeConfig,
+    showLabel = true,
 }) {
     const group = useRef()
     const leftArm = useRef()
@@ -766,24 +767,26 @@ export default function Worker({
                 )}
 
                 {/* Floating label */}
-                <Html position={[0, 2.42, 0]} center distanceFactor={12} style={{ pointerEvents: 'none' }}>
-                    <div
-                        style={{
-                            background: 'rgba(30,41,59,0.85)',
-                            color: '#fff',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            fontFamily: "'Inter', sans-serif",
-                            whiteSpace: 'nowrap',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            userSelect: 'none',
-                        }}
-                    >
-                        {id}
-                    </div>
-                </Html>
+                {showLabel ? (
+                    <Html position={[0, 2.42, 0]} center distanceFactor={12} style={{ pointerEvents: 'none' }}>
+                        <div
+                            style={{
+                                background: 'rgba(30,41,59,0.85)',
+                                color: '#fff',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                fontFamily: "'Inter', sans-serif",
+                                whiteSpace: 'nowrap',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                userSelect: 'none',
+                            }}
+                        >
+                            {id}
+                        </div>
+                    </Html>
+                ) : null}
             </group>
         </group>
     )

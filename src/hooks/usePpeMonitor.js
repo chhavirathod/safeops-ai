@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 const DEFAULT_BACKEND_URL = 'ws://127.0.0.1:8000/ws/ppe'
-const CAPTURE_INTERVAL_MS = 90
-const CAPTURE_MAX_WIDTH = 640
-const CAPTURE_JPEG_QUALITY = 0.58
+const CAPTURE_INTERVAL_MS = 140
+const CAPTURE_MAX_WIDTH = 448
+const CAPTURE_JPEG_QUALITY = 0.4
 
 function workerSeverity(worker) {
     if (worker.compliant) return 0
@@ -15,15 +15,13 @@ export default function usePpeMonitor({ renderCanvas }) {
     const [connectionState, setConnectionState] = useState('idle')
     const [error, setError] = useState('')
     const [backendUrl, setBackendUrl] = useState(DEFAULT_BACKEND_URL)
-    const [previewSrc, setPreviewSrc] = useState('')
-    const [depthPreviewSrc, setDepthPreviewSrc] = useState('')
-    const [depthStats, setDepthStats] = useState(null)
     const [frameRate, setFrameRate] = useState(0)
     const [lastResult, setLastResult] = useState(null)
+    const [frameSize, setFrameSize] = useState({ width: 0, height: 0 })
     const [backendWorkerCount, setBackendWorkerCount] = useState(0)
     const [backendDetectionCount, setBackendDetectionCount] = useState(0)
     const [backendPersonCount, setBackendPersonCount] = useState(0)
-    const [backendPpeCount, setBackendPpeCount] = useState(0)
+    const [backendHelmetCount, setBackendHelmetCount] = useState(0)
 
     const socketRef = useRef(null)
     const intervalRef = useRef(null)
@@ -60,15 +58,13 @@ export default function usePpeMonitor({ renderCanvas }) {
 
         setEnabled(false)
         setConnectionState('idle')
-        setPreviewSrc('')
-        setDepthPreviewSrc('')
-        setDepthStats(null)
         setFrameRate(0)
         setLastResult(null)
+        setFrameSize({ width: 0, height: 0 })
         setBackendWorkerCount(0)
         setBackendDetectionCount(0)
         setBackendPersonCount(0)
-        setBackendPpeCount(0)
+        setBackendHelmetCount(0)
     }
 
     const startMonitoring = async () => {
@@ -108,17 +104,15 @@ export default function usePpeMonitor({ renderCanvas }) {
 
             if (payload.type === 'frame_result') {
                 pendingFrameRef.current = false
-                setPreviewSrc(payload.preview || '')
-                setDepthPreviewSrc(payload.depth?.preview || '')
-                setDepthStats(payload.depth || null)
                 setLastResult(payload.result ?? null)
+                setFrameSize(payload.frame_size ?? { width: 0, height: 0 })
                 setBackendWorkerCount(payload.result?.workers?.length ?? 0)
                 setBackendDetectionCount(payload.result?.detections?.length ?? 0)
                 setBackendPersonCount(
                     (payload.result?.detections ?? []).filter((detection) => detection.canonical_label === 'person').length
                 )
-                setBackendPpeCount(
-                    (payload.result?.detections ?? []).filter((detection) => detection.canonical_label !== 'person').length
+                setBackendHelmetCount(
+                    (payload.result?.detections ?? []).filter((detection) => detection.canonical_label === 'helmet').length
                 )
 
                 const tracker = resultsCounterRef.current
@@ -204,15 +198,14 @@ export default function usePpeMonitor({ renderCanvas }) {
         backendUrl,
         setBackendUrl,
         frameRate,
-        previewSrc,
-        depthPreviewSrc,
-        depthStats,
+        frameSize,
         workers,
         alerts,
+        lastResult,
         backendWorkerCount,
         backendDetectionCount,
         backendPersonCount,
-        backendPpeCount,
+        backendHelmetCount,
         startMonitoring,
         stopMonitoring,
     }

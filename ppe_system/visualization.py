@@ -25,8 +25,10 @@ def annotate_frame(frame, result: FrameComplianceResult, show_fps: bool = True, 
     _overlay_detection_masks(annotated, result)
     for worker in result.workers:
         x1, y1, x2, y2 = worker.bbox
-        color = GREEN if worker.compliant else RED
-        cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
+        cv2.rectangle(annotated, (x1, y1), (x2, y2), (235, 235, 235), 1)
+        head_box = _build_head_box(worker.bbox)
+        head_color = GREEN if worker.helmet else RED
+        cv2.rectangle(annotated, (head_box[0], head_box[1]), (head_box[2], head_box[3]), head_color, 2)
 
         status = "COMPLIANT" if worker.compliant else f"MISSING: {', '.join(worker.violations)}"
         header = f"{worker.id} | {status}"
@@ -34,8 +36,16 @@ def annotate_frame(frame, result: FrameComplianceResult, show_fps: bool = True, 
             f"H:{int(worker.helmet)} V:{int(worker.vest)} "
             f"G:{int(worker.gloves)} M:{int(worker.mask)}"
         )
-        _draw_label(annotated, header, x1, max(24, y1 - 28), color)
+        _draw_label(annotated, header, x1, max(24, y1 - 28), head_color)
         _draw_label(annotated, detail, x1, max(48, y1 - 4), PANEL, text_color=WHITE)
+        _draw_label(
+            annotated,
+            "HELMET OK" if worker.helmet else "NO HELMET",
+            head_box[0],
+            max(20, head_box[1] - 6),
+            head_color,
+            text_color=(10, 10, 10) if worker.helmet else WHITE,
+        )
 
     if result.alerts:
         _draw_label(
@@ -64,20 +74,37 @@ def draw_results(frame, result: FrameComplianceResult, show_fps: bool = True, fp
     return annotate_frame(frame, result, show_fps=show_fps, fps=fps)
 
 
+def _build_head_box(worker_bbox):
+    x1, y1, x2, y2 = worker_bbox
+    width = x2 - x1
+    height = y2 - y1
+    margin_x = int(round(width * 0.15))
+    head_bottom = int(round(y1 + height * 0.28))
+    return (
+        max(0, x1 + margin_x),
+        max(0, y1),
+        max(0, x2 - margin_x),
+        max(0, head_bottom),
+    )
+
+
 def _overlay_detection_masks(frame, result: FrameComplianceResult) -> None:
     if not result.detections:
         return
 
     overlay = frame.copy()
+    has_mask_overlay = False
     for detection in result.detections:
         color = MASK_COLORS.get(detection.canonical_label, (180, 180, 180))
         x1, y1, x2, y2 = [int(round(value)) for value in detection.bbox]
         if detection.mask is not None:
             overlay[detection.mask] = np.array(color, dtype=np.uint8)
+            has_mask_overlay = True
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 1)
         _draw_label(frame, f"{detection.canonical_label} {detection.confidence:.2f}", x1, max(20, y1 - 6), color)
 
-    cv2.addWeighted(overlay, 0.28, frame, 0.72, 0.0, dst=frame)
+    if has_mask_overlay:
+        cv2.addWeighted(overlay, 0.28, frame, 0.72, 0.0, dst=frame)
 
 
 def _draw_label(frame, text: str, x: int, y: int, bg_color, text_color=WHITE):

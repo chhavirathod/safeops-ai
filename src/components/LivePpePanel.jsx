@@ -33,14 +33,12 @@ export default function LivePpePanel({
     connectionState,
     error,
     frameRate,
-    previewSrc,
-    depthStats,
     workers,
     alerts,
     backendWorkerCount,
     backendDetectionCount,
     backendPersonCount,
-    backendPpeCount,
+    backendHelmetCount,
     onStart,
     onStop,
 }) {
@@ -74,31 +72,6 @@ export default function LivePpePanel({
                         />
                     </label>
 
-                    <div className="rounded-2xl border border-white/10 bg-slate-950/60 overflow-hidden">
-                        <div className="aspect-video bg-slate-950 relative">
-                            {previewSrc ? (
-                                <img
-                                    src={previewSrc}
-                                    alt="Live PPE preview"
-                                    className="h-full w-full object-cover"
-                                />
-                            ) : (
-                                <div className="absolute inset-0 grid place-items-center text-center px-6">
-                                    <div>
-                                        <p className="text-sm font-medium text-slate-100">No live frame yet</p>
-                                        <p className="text-xs text-slate-400 mt-1">
-                                            Start monitoring to stream the Three.js CCTV view to the backend.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        <div className="px-3 py-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300">
-                            <span>{backendWorkerCount} tracked workers</span>
-                            <span>{frameRate} fps</span>
-                        </div>
-                    </div>
-
                     <div className="flex gap-2">
                         <button
                             onClick={enabled ? onStop : onStart}
@@ -120,11 +93,11 @@ export default function LivePpePanel({
 
                     <div className="grid grid-cols-2 gap-2 text-[11px]">
                         <div className="rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2">
-                            <p className="text-slate-400 uppercase tracking-[0.2em] text-[9px]">Alerts</p>
+                            <p className="text-slate-400 uppercase tracking-[0.2em] text-[9px]">No Helmet</p>
                             <p className="mt-1 text-lg font-semibold text-white">{alerts.length}</p>
                         </div>
                         <div className="rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2">
-                            <p className="text-slate-400 uppercase tracking-[0.2em] text-[9px]">Compliant</p>
+                            <p className="text-slate-400 uppercase tracking-[0.2em] text-[9px]">Helmet OK</p>
                             <p className="mt-1 text-lg font-semibold text-white">
                                 {workers.filter((worker) => worker.compliant).length}
                             </p>
@@ -133,11 +106,11 @@ export default function LivePpePanel({
 
                     <div className="rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-[11px] text-slate-300">
                         <div className="flex items-center justify-between">
-                            <span>Tracked workers</span>
+                            <span>Visible workers</span>
                             <span>{backendWorkerCount}</span>
                         </div>
                         <div className="flex items-center justify-between mt-1">
-                            <span>Total detections</span>
+                            <span>Total boxes</span>
                             <span>{backendDetectionCount}</span>
                         </div>
                         <div className="flex items-center justify-between mt-1">
@@ -145,19 +118,19 @@ export default function LivePpePanel({
                             <span>{backendPersonCount}</span>
                         </div>
                         <div className="flex items-center justify-between mt-1">
-                            <span>PPE detections</span>
-                            <span>{backendPpeCount}</span>
+                            <span>Helmet detections</span>
+                            <span>{backendHelmetCount}</span>
                         </div>
                         <div className="flex items-center justify-between mt-1">
-                            <span>Depth graph</span>
-                            <span>{depthStats ? 'Viewport active' : 'Off'}</span>
+                            <span>Main feed fps</span>
+                            <span>{frameRate}</span>
                         </div>
                     </div>
 
                     <div className="max-h-[260px] overflow-y-auto pr-1 flex flex-col gap-2">
                         {workers.length === 0 ? (
                             <div className="rounded-xl border border-dashed border-white/10 bg-slate-950/25 px-3 py-4 text-center text-xs text-slate-400">
-                                No workers were detected in the streamed frame yet. This panel uses backend CV output only, so if `Person detections` stays at 0 the model is missing avatar bodies.
+                                No people were detected in the streamed frame yet. The live path is now a fast helmet check, so if `Person detections` stays at 0 the model is still missing avatar bodies.
                             </div>
                         ) : (
                             workers.map((worker) => (
@@ -169,16 +142,12 @@ export default function LivePpePanel({
                                         <div>
                                             <p className="text-sm font-semibold text-white">{worker.id}</p>
                                             <p className="text-[11px] text-slate-300">
-                                                {worker.compliant
-                                                    ? 'Fully compliant'
-                                                    : `Missing ${worker.violations.join(', ')}`}
+                                                {worker.compliant ? 'Helmet detected' : 'Helmet missing'}
                                             </p>
                                         </div>
                                         <div className="text-right text-[10px] text-slate-300">
                                             <p>Helmet {worker.helmet ? 'Yes' : 'No'}</p>
-                                            <p>Vest {worker.vest ? 'Yes' : 'No'}</p>
-                                            <p>Gloves {worker.gloves ? 'Yes' : 'No'}</p>
-                                            <p>Mask {worker.mask == null ? 'N/A' : worker.mask ? 'Yes' : 'No'}</p>
+                                            <p>Status {worker.compliant ? 'Safe' : 'Alert'}</p>
                                         </div>
                                     </div>
                                 </div>

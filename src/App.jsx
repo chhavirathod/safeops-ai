@@ -22,6 +22,18 @@ const ROOM_LIBRARY = [
     { id: 'dispatch', name: 'Dispatch Dock', accent: '#22c55e' },
 ]
 
+function buildHeadBox(worker) {
+    const [x1, y1, x2, y2] = worker.bbox
+    const width = x2 - x1
+    const height = y2 - y1
+    return [
+        x1 + width * 0.16,
+        y1,
+        x2 - width * 0.16,
+        y1 + height * 0.3,
+    ]
+}
+
 function getAssignmentScore(workerIndex, complianceKey) {
     let hash = workerIndex + 1
 
@@ -223,6 +235,33 @@ export default function App() {
     }, [workerCount, workers])
 
     const liveMonitor = usePpeMonitor({ renderCanvas })
+    const showSceneLabels = !liveMonitor.enabled
+    const liveOverlayWorkers = useMemo(() => {
+        if (!liveMonitor.enabled || !liveMonitor.frameSize.width || !liveMonitor.frameSize.height) {
+            return []
+        }
+
+        return liveMonitor.workers.map((worker) => {
+            const [x1, y1, x2, y2] = worker.bbox
+            const [hx1, hy1, hx2, hy2] = buildHeadBox(worker)
+            return {
+                id: worker.id,
+                helmet: worker.helmet,
+                personStyle: {
+                    left: `${(x1 / liveMonitor.frameSize.width) * 100}%`,
+                    top: `${(y1 / liveMonitor.frameSize.height) * 100}%`,
+                    width: `${((x2 - x1) / liveMonitor.frameSize.width) * 100}%`,
+                    height: `${((y2 - y1) / liveMonitor.frameSize.height) * 100}%`,
+                },
+                headStyle: {
+                    left: `${(hx1 / liveMonitor.frameSize.width) * 100}%`,
+                    top: `${(hy1 / liveMonitor.frameSize.height) * 100}%`,
+                    width: `${((hx2 - hx1) / liveMonitor.frameSize.width) * 100}%`,
+                    height: `${((hy2 - hy1) / liveMonitor.frameSize.height) * 100}%`,
+                },
+            }
+        })
+    }, [liveMonitor.enabled, liveMonitor.frameSize.height, liveMonitor.frameSize.width, liveMonitor.workers])
 
     const startTransitionToArea = (targetLabel, onMidpoint) => {
         if (transitionState) {
@@ -270,8 +309,9 @@ export default function App() {
         <div className="w-full h-full relative" style={{ background: 'linear-gradient(180deg, #dce4eb 0%, #c6d1dc 100%)' }}>
             {/* 3D Canvas */}
             <Canvas
+                dpr={[1, 1.25]}
                 shadows
-                gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
+                gl={{ antialias: false, alpha: false, preserveDrawingBuffer: true }}
                 camera={{ fov: 50, near: 0.1, far: 200 }}
                 style={{ position: 'absolute', inset: 0 }}
                 onCreated={({ gl }) => {
@@ -287,6 +327,7 @@ export default function App() {
                     roomOptions={ROOM_LIBRARY.slice(0, roomCount)}
                     onEnterRoom={handleEnterRoom}
                     onReturnToHub={handleReturnToHub}
+                    showLabels={showSceneLabels}
                 />
 
                 {workers.map((w) => (
@@ -299,20 +340,28 @@ export default function App() {
                         workerIndex={Number(w.id.slice(1)) - 1}
                         obstacles={w.obstacles}
                         ppeConfig={w.ppeConfig}
+                        showLabel={showSceneLabels}
                     />
                 ))}
             </Canvas>
 
-            {liveMonitor.depthPreviewSrc ? (
-                <div className="absolute inset-0 z-10 bg-slate-700/70 backdrop-blur-[1px]">
-                    <img
-                        src={liveMonitor.depthPreviewSrc}
-                        alt="Warehouse depth graph"
-                        className="h-full w-full object-cover opacity-95"
-                    />
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full border border-slate-200/35 bg-slate-950/55 px-4 py-1.5 text-[11px] font-medium tracking-[0.18em] text-slate-100 uppercase">
-                        Full Scene Depth Graph
+            {liveMonitor.enabled ? (
+                <div className="absolute inset-0 z-10 pointer-events-none">
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full border border-emerald-300/35 bg-slate-950/55 px-4 py-1.5 text-[11px] font-medium tracking-[0.18em] text-emerald-100 uppercase">
+                        Live Helmet Overlay
                     </div>
+                    {liveOverlayWorkers.map((worker) => (
+                        <div key={worker.id}>
+                            <div
+                                className="absolute border border-white/80 rounded-[4px]"
+                                style={worker.personStyle}
+                            />
+                            <div
+                                className={`absolute rounded-[4px] border-2 ${worker.helmet ? 'border-emerald-400' : 'border-red-500'}`}
+                                style={worker.headStyle}
+                            />
+                        </div>
+                    ))}
                 </div>
             ) : null}
 
@@ -340,14 +389,12 @@ export default function App() {
                 connectionState={liveMonitor.connectionState}
                 error={liveMonitor.error}
                 frameRate={liveMonitor.frameRate}
-                previewSrc={liveMonitor.previewSrc}
-                depthStats={liveMonitor.depthStats}
                 workers={liveMonitor.workers}
                 alerts={liveMonitor.alerts}
                 backendWorkerCount={liveMonitor.backendWorkerCount}
                 backendDetectionCount={liveMonitor.backendDetectionCount}
                 backendPersonCount={liveMonitor.backendPersonCount}
-                backendPpeCount={liveMonitor.backendPpeCount}
+                backendHelmetCount={liveMonitor.backendHelmetCount}
                 onStart={liveMonitor.startMonitoring}
                 onStop={liveMonitor.stopMonitoring}
             />

@@ -99,7 +99,7 @@ function WallPanels({ width, height, depth, accent = '#64748b' }) {
     )
 }
 
-function DoorTrigger({ position, rotation = [0, 0, 0], label, accent = '#22d3ee', onClick }) {
+function DoorTrigger({ position, rotation = [0, 0, 0], label, accent = '#22d3ee', onClick, showLabel = true }) {
     return (
         <group position={position} rotation={rotation}>
             <mesh
@@ -115,25 +115,27 @@ function DoorTrigger({ position, rotation = [0, 0, 0], label, accent = '#22d3ee'
                 <boxGeometry args={[3.2, 3.8, 0.12]} />
                 <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.2} />
             </mesh>
-            <Html position={[0, 4.65, 0]} center distanceFactor={14} style={{ pointerEvents: 'auto' }}>
-                <div
-                    onClick={onClick}
-                    style={{
-                        background: 'rgba(15, 23, 42, 0.92)',
-                        color: '#f8fafc',
-                        border: `1px solid ${accent}`,
-                        borderRadius: '999px',
-                        padding: '5px 10px',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        whiteSpace: 'nowrap',
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                    }}
-                >
-                    {label}
-                </div>
-            </Html>
+            {showLabel ? (
+                <Html position={[0, 4.65, 0]} center distanceFactor={14} style={{ pointerEvents: 'auto' }}>
+                    <div
+                        onClick={onClick}
+                        style={{
+                            background: 'rgba(15, 23, 42, 0.92)',
+                            color: '#f8fafc',
+                            border: `1px solid ${accent}`,
+                            borderRadius: '999px',
+                            padding: '5px 10px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                            cursor: 'pointer',
+                            userSelect: 'none',
+                        }}
+                    >
+                        {label}
+                    </div>
+                </Html>
+            ) : null}
         </group>
     )
 }
@@ -339,7 +341,7 @@ function InspectionPod({ position }) {
     )
 }
 
-function HubScene({ roomOptions, onEnterRoom }) {
+function HubScene({ roomOptions, onEnterRoom, showLabels = true }) {
     const doorSpacing = roomOptions.length > 1 ? 24 / (roomOptions.length - 1) : 0
     const startX = -12
 
@@ -372,25 +374,28 @@ function HubScene({ roomOptions, onEnterRoom }) {
                     label={room.name}
                     accent={room.accent}
                     onClick={() => onEnterRoom(index)}
+                    showLabel={showLabels}
                 />
             ))}
 
-            <Html position={[0, 7.1, -HUB_SIZE.depth / 2 + 0.3]} center distanceFactor={18} style={{ pointerEvents: 'none' }}>
-                <div
-                    style={{
-                        background: 'rgba(15, 23, 42, 0.92)',
-                        color: '#67e8f9',
-                        border: '1px solid rgba(103, 232, 249, 0.7)',
-                        borderRadius: '999px',
-                        padding: '7px 14px',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    Open Bay: choose a door to enter a room
-                </div>
-            </Html>
+            {showLabels ? (
+                <Html position={[0, 7.1, -HUB_SIZE.depth / 2 + 0.3]} center distanceFactor={18} style={{ pointerEvents: 'none' }}>
+                    <div
+                        style={{
+                            background: 'rgba(15, 23, 42, 0.92)',
+                            color: '#67e8f9',
+                            border: '1px solid rgba(103, 232, 249, 0.7)',
+                            borderRadius: '999px',
+                            padding: '7px 14px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        Open Bay: choose a door to enter a room
+                    </div>
+                </Html>
+            ) : null}
 
             <ConveyorBelt position={[-8, 0, 2]} length={11} />
             <PalletStack position={[10, 0, 6]} levels={4} />
@@ -403,7 +408,7 @@ function HubScene({ roomOptions, onEnterRoom }) {
     )
 }
 
-function RoomScene({ room, onReturnToHub }) {
+function RoomScene({ room, onReturnToHub, showLabels = true }) {
     const halfWidth = ROOM_SIZE.width / 2
     const halfDepth = ROOM_SIZE.depth / 2
     const wallThickness = 0.24
@@ -451,24 +456,27 @@ function RoomScene({ room, onReturnToHub }) {
                 label="Back To Open Bay"
                 accent={room.accent}
                 onClick={onReturnToHub}
+                showLabel={showLabels}
             />
 
-            <Html position={[0, 6.9, halfDepth - 0.18]} center distanceFactor={18} style={{ pointerEvents: 'none' }}>
-                <div
-                    style={{
-                        background: 'rgba(15, 23, 42, 0.92)',
-                        color: room.accent,
-                        border: `1px solid ${room.accent}`,
-                        borderRadius: '999px',
-                        padding: '6px 12px',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    {room.name}
-                </div>
-            </Html>
+            {showLabels ? (
+                <Html position={[0, 6.9, halfDepth - 0.18]} center distanceFactor={18} style={{ pointerEvents: 'none' }}>
+                    <div
+                        style={{
+                            background: 'rgba(15, 23, 42, 0.92)',
+                            color: room.accent,
+                            border: `1px solid ${room.accent}`,
+                            borderRadius: '999px',
+                            padding: '6px 12px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {room.name}
+                    </div>
+                </Html>
+            ) : null}
 
             <CeilingBeamRow width={ROOM_SIZE.width} depth={ROOM_SIZE.depth} height={ROOM_SIZE.wallHeight} />
             <RoomEnvironment roomId={room.id} />
@@ -627,6 +635,7 @@ export default function Scene({
     roomOptions,
     onEnterRoom,
     onReturnToHub,
+    showLabels = true,
 }) {
     useCameraControls(selectedRoomIndex ?? 'hub', currentArea.id)
 
@@ -636,9 +645,9 @@ export default function Scene({
             <SceneFog mode={lightingMode} areaId={currentArea.id} />
             <SceneLighting mode={lightingMode} areaId={currentArea.id} />
             {selectedRoomIndex === null ? (
-                <HubScene roomOptions={roomOptions} onEnterRoom={onEnterRoom} />
+                <HubScene roomOptions={roomOptions} onEnterRoom={onEnterRoom} showLabels={showLabels} />
             ) : (
-                <RoomScene room={currentArea} onReturnToHub={onReturnToHub} />
+                <RoomScene room={currentArea} onReturnToHub={onReturnToHub} showLabels={showLabels} />
             )}
         </>
     )

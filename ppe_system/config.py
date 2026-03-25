@@ -50,15 +50,6 @@ class SamConfig:
 
 
 @dataclass(slots=True)
-class DepthConfig:
-    enabled: bool = False
-    model_id: str = "Intel/dpt-hybrid-midas"
-    local_files_only: bool = False
-    max_frame_side: int = 384
-    process_every_n_frames: int = 2
-
-
-@dataclass(slots=True)
 class TrackerConfig:
     max_age: int = 30
     n_init: int = 1
@@ -105,7 +96,6 @@ class RuntimeConfig:
 class SystemConfig:
     detector: DetectorConfig = field(default_factory=DetectorConfig)
     sam: SamConfig = field(default_factory=SamConfig)
-    depth: DepthConfig = field(default_factory=DepthConfig)
     tracker: TrackerConfig = field(default_factory=TrackerConfig)
     compliance: ComplianceConfig = field(default_factory=ComplianceConfig)
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)

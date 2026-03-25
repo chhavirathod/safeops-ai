@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from base64 import b64encode
-from copy import deepcopy
 from pathlib import Path
+from time import perf_counter
 
 import cv2
 import numpy as np
@@ -11,90 +10,170 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
-from .config import ComplianceConfig, DepthConfig, DetectorConfig, RuntimeConfig, SamConfig, SystemConfig, TrackerConfig
+from .config import DetectorConfig
 from .dataset_export import DatasetExporter
-from .depth import MidasDepthEstimator
-from .pipeline import PPECompliancePipeline
-from .visualization import annotate_frame
+from .detection import YoloPpeDetector
+from .schemas import AlertEvent, DetectionBox, FrameComplianceResult, WorkerCompliance
 
 
-def _build_config(
-    model_path: str,
-    sam_enabled: bool = True,
-    sam_local_files_only: bool = False,
-    inference_image_size: int = 512,
-    depth_enabled: bool = False,
-    depth_model_id: str = "Intel/dpt-hybrid-midas",
-    depth_local_files_only: bool = False,
-    depth_max_frame_side: int = 384,
-    depth_process_every_n_frames: int = 2,
-) -> SystemConfig:
-    return SystemConfig(
-        detector=DetectorConfig(model_path=model_path, image_size=inference_image_size),
-        sam=SamConfig(
-            enabled=sam_enabled,
-            local_files_only=sam_local_files_only,
-            segment_person_boxes=False,
-            segment_ppe_boxes=True,
-            max_detections_per_frame=16,
-        ),
-        depth=DepthConfig(
-            enabled=depth_enabled,
-            model_id=depth_model_id,
-            local_files_only=depth_local_files_only,
-            max_frame_side=depth_max_frame_side,
-            process_every_n_frames=depth_process_every_n_frames,
-        ),
-        tracker=TrackerConfig(),
-        compliance=ComplianceConfig(),
-        runtime=RuntimeConfig(display=False, save_annotated=False),
+def _head_region(person_box: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+    x1, y1, x2, y2 = person_box
+    width = x2 - x1
+    height = y2 - y1
+    return (
+        x1 + width * 0.16,
+        y1,
+        x2 - width * 0.16,
+        y1 + height * 0.3,
     )
+
+
+def _intersection_area(
+    box_a: tuple[float, float, float, float],
+    box_b: tuple[float, float, float, float],
+) -> float:
+    ax1, ay1, ax2, ay2 = box_a
+    bx1, by1, bx2, by2 = box_b
+    overlap_x1 = max(ax1, bx1)
+    overlap_y1 = max(ay1, by1)
+    overlap_x2 = min(ax2, bx2)
+    overlap_y2 = min(ay2, by2)
+    if overlap_x2 <= overlap_x1 or overlap_y2 <= overlap_y1:
+        return 0.0
+    return float((overlap_x2 - overlap_x1) * (overlap_y2 - overlap_y1))
+
+
+def _box_area(box: tuple[float, float, float, float]) -> float:
+    x1, y1, x2, y2 = box
+    return max(0.0, x2 - x1) * max(0.0, y2 - y1)
+
+
+def _center_inside(box: tuple[float, float, float, float], point: tuple[float, float]) -> bool:
+    x1, y1, x2, y2 = box
+    px, py = point
+    return x1 <= px <= x2 and y1 <= py <= y2
+
+
+def _detection_center(detection: DetectionBox) -> tuple[float, float]:
+    x1, y1, x2, y2 = detection.bbox
+    return ((x1 + x2) * 0.5, (y1 + y2) * 0.5)
+
+
+class FastLivePpeEvaluator:
+    def __init__(self, model_path: str, inference_image_size: int = 384):
+        self.detector = YoloPpeDetector(
+            DetectorConfig(
+                model_path=model_path,
+                image_size=inference_image_size,
+                confidence=0.24,
+                person_confidence=0.18,
+                classes_of_interest=("person", "helmet", "no_helmet"),
+            )
+        )
+        self.device = self.detector.device
+
+    def process_frame(self, frame, frame_index: int) -> FrameComplianceResult:
+        start = perf_counter()
+        people, ppe = self.detector.infer(frame)
+        workers = self._build_workers(people, ppe)
+        alerts = [
+            AlertEvent(
+                id=worker.id,
+                track_id=worker.track_id,
+                rule="missing_helmet",
+                frame_index=frame_index,
+                message=f"{worker.id} missing helmet",
+            )
+            for worker in workers
+            if not worker.helmet
+        ]
+        timestamp_ms = (perf_counter() - start) * 1000.0
+        return FrameComplianceResult(
+            frame_index=frame_index,
+            timestamp_ms=timestamp_ms,
+            workers=workers,
+            alerts=alerts,
+            detections=[*people, *ppe],
+        )
+
+    def _build_workers(
+        self,
+        people: list[DetectionBox],
+        ppe_detections: list[DetectionBox],
+    ) -> list[WorkerCompliance]:
+        workers: list[WorkerCompliance] = []
+        ordered_people = sorted(people, key=lambda detection: (detection.bbox[1], detection.bbox[0]))
+        for index, person in enumerate(ordered_people, start=1):
+            helmet_present = self._has_helmet(person, ppe_detections)
+            bbox = [int(round(value)) for value in person.bbox]
+            workers.append(
+                WorkerCompliance(
+                    id=f"ID_{index}",
+                    track_id=index,
+                    bbox=bbox,
+                    helmet=helmet_present,
+                    vest=True,
+                    gloves=True,
+                    mask=True,
+                    compliant=helmet_present,
+                    violations=[] if helmet_present else ["helmet"],
+                    missing_counts={"helmet": 0 if helmet_present else 1},
+                    last_seen_frame=0,
+                )
+            )
+        return workers
+
+    def _has_helmet(self, person: DetectionBox, ppe_detections: list[DetectionBox]) -> bool:
+        head_box = _head_region(person.bbox)
+        head_area = max(_box_area(head_box), 1.0)
+        positive_score = 0.0
+        negative_score = 0.0
+
+        for detection in ppe_detections:
+            if detection.canonical_label not in {"helmet", "no_helmet"}:
+                continue
+
+            center = _detection_center(detection)
+            if not _center_inside(person.bbox, center):
+                continue
+
+            overlap = _intersection_area(head_box, detection.bbox) / head_area
+            if overlap <= 0.01 and not _center_inside(head_box, center):
+                continue
+
+            score = max(overlap, 0.12) * detection.confidence
+            if detection.canonical_label == "helmet":
+                positive_score = max(positive_score, score)
+            else:
+                negative_score = max(negative_score, score)
+
+        if positive_score == 0.0 and negative_score == 0.0:
+            return False
+        return positive_score >= negative_score
 
 
 class LivePpeServer:
     def __init__(
         self,
         model_path: str = "best.pt",
-        sam_enabled: bool = True,
-        sam_local_files_only: bool = False,
-        inference_image_size: int = 512,
-        max_frame_side: int = 640,
-        preview_max_width: int = 480,
+        inference_image_size: int = 384,
+        max_frame_side: int = 448,
         save_dataset: bool = False,
-        dataset_stride: int = 12,
-        depth_enabled: bool = False,
-        depth_model_id: str = "Intel/dpt-hybrid-midas",
-        depth_local_files_only: bool = False,
-        depth_max_frame_side: int = 384,
-        depth_process_every_n_frames: int = 2,
+        dataset_stride: int = 18,
     ):
         resolved_model = Path(model_path).expanduser()
         if not resolved_model.exists():
             raise FileNotFoundError(f"Model file not found: {resolved_model}")
 
         self.model_path = str(resolved_model)
-        self.pipeline = PPECompliancePipeline(
-            _build_config(
-                self.model_path,
-                sam_enabled=sam_enabled,
-                sam_local_files_only=sam_local_files_only,
-                inference_image_size=inference_image_size,
-                depth_enabled=depth_enabled,
-                depth_model_id=depth_model_id,
-                depth_local_files_only=depth_local_files_only,
-                depth_max_frame_side=depth_max_frame_side,
-                depth_process_every_n_frames=depth_process_every_n_frames,
-            )
+        self.evaluator = FastLivePpeEvaluator(
+            model_path=self.model_path,
+            inference_image_size=inference_image_size,
         )
         self.max_frame_side = max(256, max_frame_side)
-        self.preview_max_width = max(240, preview_max_width)
         self.save_dataset = save_dataset
         self.dataset_stride = max(1, dataset_stride)
         self.dataset_exporter = DatasetExporter("dataset") if save_dataset else None
-        self.depth_estimator = MidasDepthEstimator(self.pipeline.config.depth, self.pipeline.device)
-        self.depth_stride = max(1, self.pipeline.config.depth.process_every_n_frames)
-        self.last_depth_payload = None
-        self._latest_frame_result = None
         self.lock = asyncio.Lock()
 
     async def process_encoded_frame(self, frame_bytes: bytes, frame_index: int) -> dict:
@@ -105,28 +184,23 @@ class LivePpeServer:
         frame = self._resize_for_live_processing(frame)
 
         async with self.lock:
-            result = self.pipeline.process_frame(frame=frame, frame_index=frame_index)
-            self._latest_frame_result = result
+            result = self.evaluator.process_frame(frame=frame, frame_index=frame_index)
             payload = result.to_dict()
             dataset_files = None
             if self.dataset_exporter is not None and frame_index % self.dataset_stride == 0:
                 dataset_files = self.dataset_exporter.save_frame(frame, result)
-            depth_payload = self._process_depth(frame, frame_index)
 
-        annotated = annotate_frame(frame, result, show_fps=False, fps=0.0)
-        preview_frame = self._resize_for_preview(annotated)
-        success, encoded = cv2.imencode(".jpg", preview_frame, [int(cv2.IMWRITE_JPEG_QUALITY), 42])
-        preview_data = None
-        if success:
-            preview_data = f"data:image/jpeg;base64,{b64encode(encoded.tobytes()).decode('utf-8')}"
+        frame_height, frame_width = frame.shape[:2]
 
         return {
             "type": "frame_result",
             "frame_index": frame_index,
-            "preview": preview_data,
             "result": payload,
             "dataset_files": dataset_files,
-            "depth": depth_payload,
+            "frame_size": {
+                "width": frame_width,
+                "height": frame_height,
+            },
         }
 
     def _resize_for_live_processing(self, frame):
@@ -138,158 +212,20 @@ class LivePpeServer:
         resized_size = (max(1, int(round(width * scale))), max(1, int(round(height * scale))))
         return cv2.resize(frame, resized_size, interpolation=cv2.INTER_AREA)
 
-    def _resize_for_preview(self, frame):
-        height, width = frame.shape[:2]
-        if width <= self.preview_max_width:
-            return frame
-        scale = self.preview_max_width / float(width)
-        resized_size = (self.preview_max_width, max(1, int(round(height * scale))))
-        return cv2.resize(frame, resized_size, interpolation=cv2.INTER_AREA)
-
-    def _process_depth(self, frame, frame_index: int):
-        if self.depth_estimator.model is None or self.depth_estimator.processor is None:
-            return None
-        if frame_index % self.depth_stride == 0 or self.last_depth_payload is None:
-            latest_result = getattr(self, "_latest_frame_result", None)
-            person_boxes = self._derive_depth_person_boxes(frame, latest_result)
-            result = self.depth_estimator.estimate(frame, person_boxes=person_boxes)
-            self.last_depth_payload = result.to_dict() if result is not None else None
-        return deepcopy(self.last_depth_payload)
-
-    def _derive_depth_person_boxes(self, frame, latest_result) -> list[tuple[int, int, int, int]]:
-        if latest_result is None:
-            return []
-
-        frame_h, frame_w = frame.shape[:2]
-        boxes: list[tuple[int, int, int, int]] = []
-
-        if latest_result.workers:
-            boxes.extend([tuple(worker.bbox) for worker in latest_result.workers])
-        else:
-            boxes.extend(
-                [
-                    tuple(int(round(value)) for value in detection.bbox)
-                    for detection in latest_result.detections
-                    if detection.canonical_label == "person"
-                ]
-            )
-
-        if boxes:
-            return self._dedupe_boxes(boxes)
-
-        proxy_boxes = []
-        for detection in latest_result.detections:
-            label = detection.canonical_label
-            if label not in {"helmet", "vest", "gloves", "mask"}:
-                continue
-
-            x1, y1, x2, y2 = [float(value) for value in detection.bbox]
-            width = max(1.0, x2 - x1)
-            height = max(1.0, y2 - y1)
-
-            if label == "helmet":
-                proxy = (
-                    x1 - width * 1.7,
-                    y1 - height * 0.25,
-                    x2 + width * 1.7,
-                    y2 + height * 7.2,
-                )
-            elif label == "mask":
-                proxy = (
-                    x1 - width * 2.0,
-                    y1 - height * 1.0,
-                    x2 + width * 2.0,
-                    y2 + height * 6.2,
-                )
-            elif label == "vest":
-                proxy = (
-                    x1 - width * 0.75,
-                    y1 - height * 1.35,
-                    x2 + width * 0.75,
-                    y2 + height * 1.85,
-                )
-            else:
-                proxy = (
-                    x1 - width * 1.4,
-                    y1 - height * 4.2,
-                    x2 + width * 1.4,
-                    y2 + height * 1.4,
-                )
-
-            proxy_boxes.append(self._clamp_box(proxy, frame_w, frame_h))
-
-        return self._dedupe_boxes(proxy_boxes)
-
-    def _clamp_box(self, box, frame_w: int, frame_h: int) -> tuple[int, int, int, int]:
-        x1, y1, x2, y2 = box
-        clamped = (
-            max(0, min(frame_w - 1, int(round(x1)))),
-            max(0, min(frame_h - 1, int(round(y1)))),
-            max(0, min(frame_w, int(round(x2)))),
-            max(0, min(frame_h, int(round(y2)))),
-        )
-        if clamped[2] <= clamped[0] or clamped[3] <= clamped[1]:
-            return (0, 0, 0, 0)
-        return clamped
-
-    def _dedupe_boxes(self, boxes: list[tuple[int, int, int, int]]) -> list[tuple[int, int, int, int]]:
-        deduped: list[tuple[int, int, int, int]] = []
-        for candidate in boxes:
-            if candidate[2] <= candidate[0] or candidate[3] <= candidate[1]:
-                continue
-            if any(self._box_iou(candidate, existing) >= 0.28 for existing in deduped):
-                continue
-            deduped.append(candidate)
-        return deduped
-
-    def _box_iou(
-        self,
-        box_a: tuple[int, int, int, int],
-        box_b: tuple[int, int, int, int],
-    ) -> float:
-        ax1, ay1, ax2, ay2 = box_a
-        bx1, by1, bx2, by2 = box_b
-        inter_x1 = max(ax1, bx1)
-        inter_y1 = max(ay1, by1)
-        inter_x2 = min(ax2, bx2)
-        inter_y2 = min(ay2, by2)
-        if inter_x2 <= inter_x1 or inter_y2 <= inter_y1:
-            return 0.0
-        intersection = float((inter_x2 - inter_x1) * (inter_y2 - inter_y1))
-        area_a = float(max(0, ax2 - ax1) * max(0, ay2 - ay1))
-        area_b = float(max(0, bx2 - bx1) * max(0, by2 - by1))
-        return intersection / max(area_a + area_b - intersection, 1e-6)
-
 
 def create_app(
     model_path: str = "best.pt",
-    sam_enabled: bool = True,
-    sam_local_files_only: bool = False,
-    inference_image_size: int = 512,
-    max_frame_side: int = 640,
-    preview_max_width: int = 480,
+    inference_image_size: int = 384,
+    max_frame_side: int = 448,
     save_dataset: bool = False,
-    dataset_stride: int = 12,
-    depth_enabled: bool = False,
-    depth_model_id: str = "Intel/dpt-hybrid-midas",
-    depth_local_files_only: bool = False,
-    depth_max_frame_side: int = 384,
-    depth_process_every_n_frames: int = 2,
+    dataset_stride: int = 18,
 ) -> FastAPI:
     server = LivePpeServer(
         model_path=model_path,
-        sam_enabled=sam_enabled,
-        sam_local_files_only=sam_local_files_only,
         inference_image_size=inference_image_size,
         max_frame_side=max_frame_side,
-        preview_max_width=preview_max_width,
         save_dataset=save_dataset,
         dataset_stride=dataset_stride,
-        depth_enabled=depth_enabled,
-        depth_model_id=depth_model_id,
-        depth_local_files_only=depth_local_files_only,
-        depth_max_frame_side=depth_max_frame_side,
-        depth_process_every_n_frames=depth_process_every_n_frames,
     )
     app = FastAPI(title="Warehouse PPE Compliance Backend", version="1.0.0")
 
@@ -306,8 +242,8 @@ def create_app(
         return {
             "status": "ok",
             "model_path": server.model_path,
-            "device": server.pipeline.device,
-            "depth_enabled": server.depth_estimator.model is not None,
+            "device": server.evaluator.device,
+            "mode": "fast-live-helmet",
         }
 
     @app.get("/")
@@ -318,8 +254,8 @@ def create_app(
                 "message": "Warehouse PPE backend is running.",
                 "health_url": "/health",
                 "websocket_url": "/ws/ppe",
-                "depth_enabled": server.depth_estimator.model is not None,
                 "next_step": "Start the Vite frontend with `npm run dev`, then use the website to begin live monitoring.",
+                "mode": "fast-live-helmet",
             }
         )
 
@@ -334,9 +270,9 @@ def create_app(
             {
                 "type": "ready",
                 "model_path": server.model_path,
-                "device": server.pipeline.device,
-                "depth_enabled": server.depth_estimator.model is not None,
-                "message": "PPE backend connected",
+                "device": server.evaluator.device,
+                "message": "Fast PPE backend connected",
+                "mode": "fast-live-helmet",
             }
         )
 
