@@ -22,11 +22,13 @@ export default function Navbar() {
           <path d="M10 1L18 5.5V14.5L10 19L2 14.5V5.5L10 1Z" stroke="#FF6B1A" strokeWidth="1.5" fill="none"/>
           <circle cx="10" cy="10" r="3" fill="#FF6B1A"/>
         </svg>
-        SAFEGUARD<span>AI</span>
+        <a href="#" style={{ textDecoration: 'none', color: 'inherit' }}>
+          SAFEGUARD<span>AI</span>
+        </a>
       </div>
 
       <ul className="nav-links">
-        {['Platform', 'Solutions', 'Analytics', 'Pricing'].map(item => (
+        {['Solutions', 'Analytics'].map(item => (
           <li key={item}>
             <a href={`#${item.toLowerCase()}`}>{item}</a>
           </li>
