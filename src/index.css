@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    background: #0a0a0a;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Glassmorphism utility */
+.glass {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* JSON syntax colors */
+.json-key {
+    color: #7dd3fc;
+}
+
+.json-string {
+    color: #86efac;
+}
+
+.json-number {
+    color: #fbbf24;
+}
+
+.json-bracket {
+    color: #94a3b8;
+}
+
+.json-null {
+    color: #f87171;
+}
+
+/* Slide-in animation */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.slide-in {
+    animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.7);
+    }
+}
+
+.pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.room-transition-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    pointer-events: none;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    background:
+        radial-gradient(circle at center, rgba(15, 23, 42, 0.1) 0%, rgba(2, 6, 23, 0.72) 52%, rgba(2, 6, 23, 0.96) 100%);
+    transform: scale(1.08);
+    transition: opacity 0.35s ease, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.room-transition-overlay.active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.room-transition-card {
+    min-width: 240px;
+    padding: 18px 22px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 24px 70px rgba(2, 6, 23, 0.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.room-transition-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(191, 219, 254, 0.72);
+}
+
+.room-transition-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #f8fafc;
+    text-align: center;
+}
