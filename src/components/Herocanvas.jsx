@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
+import backgroundVideo from '../assets/Warehouse_Video_Generation_Request.mp4'
 
 // ── 3D-style canvas renderer using perspective projection ──
 export default function HeroCanvas({ scrollY }) {
   const canvasRef = useRef(null)
+  const videoRef = useRef(null)
   const rafRef = useRef(null)
   const timeRef = useRef(0)
 
@@ -498,7 +500,7 @@ export default function HeroCanvas({ scrollY }) {
       // LEFT SIDE — Helmet (floating)
       {
         const baseX = w * 0.12
-        const baseY = h * 0.42
+        const baseY = h * 0.87
         const floatY = Math.sin(t * 0.6) * 18
         const driftX = Math.cos(t * 0.4) * 8
         const rotOffset = Math.sin(t * 0.3) * 0.05
@@ -547,7 +549,7 @@ export default function HeroCanvas({ scrollY }) {
       // RIGHT SIDE — Cement Truck
       {
         const baseX = w * 0.78
-        const baseY = h * 0.52
+        const baseY = h * 0.88
         const floatY = Math.sin(t * 0.5 + 1) * 14
         const z = 150 + Math.cos(t * 0.4) * 30 - scroll * 0.25
         const proj = project(baseX - w / 2, baseY - h / 2 + floatY, z)
@@ -580,23 +582,23 @@ export default function HeroCanvas({ scrollY }) {
       }
 
       // BOTTOM CENTER — Workers scene (slightly behind)
-      {
-        const baseX = w * 0.5
-        const baseY = h * 0.75
-        const z = -50 + Math.sin(t * 0.3) * 20 + scroll * 0.2
-        const proj = project(0, baseY - h / 2, z)
-        const sz = 120 * proj.scale
+      // {
+      //   const baseX = w * 0.5
+      //   const baseY = h * 0.75
+      //   const z = -50 + Math.sin(t * 0.3) * 20 + scroll * 0.2
+      //   const proj = project(0, baseY - h / 2, z)
+      //   const sz = 120 * proj.scale
 
-        ctx.save()
-        ctx.translate(proj.x, proj.y)
-        drawWorkers(ctx, 0, 0, sz, t, Math.min(1, proj.scale * 2))
-        ctx.restore()
-      }
+      //   ctx.save()
+      //   ctx.translate(proj.x, proj.y)
+      //   drawWorkers(ctx, 0, 0, sz, t, Math.min(1, proj.scale * 2))
+      //   ctx.restore()
+      // }
 
       // SMALL SIGN — top left area (floating far back)
       {
         const baseX = w * 0.22
-        const baseY = h * 0.28
+        const baseY = h * 0.36
         const floatY = Math.sin(t * 0.45 + 2) * 20
         const z = 300 - scroll * 0.15
         const proj = project(baseX - w / 2, baseY - h / 2 + floatY, z)
@@ -641,10 +643,65 @@ export default function HeroCanvas({ scrollY }) {
     }
   }, [])
 
+  // Video background setup
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    video.muted = true
+    video.loop = true
+    
+    const playVideo = () => {
+      video.play().catch((err) => {
+        console.log('Video play failed:', err)
+      })
+    }
+
+    // Try to play on mount
+    playVideo()
+
+    // Handle user interaction to trigger autoplay
+    const handleUserInteraction = () => {
+      playVideo()
+    }
+
+    document.addEventListener('click', handleUserInteraction)
+    document.addEventListener('touchstart', handleUserInteraction)
+
+    return () => {
+      document.removeEventListener('click', handleUserInteraction)
+      document.removeEventListener('touchstart', handleUserInteraction)
+    }
+  }, [])
+
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ width: '100%', height: '100%', display: 'block' }}
-    />
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <video
+        ref={videoRef}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: 10,
+        }}
+        muted
+        loop
+      >
+        <source src={backgroundVideo} type="video/mp4" />
+      </video>
+      <canvas
+        ref={canvasRef}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          zIndex: 1,
+        }}
+      />
+    </div>
   )
 }

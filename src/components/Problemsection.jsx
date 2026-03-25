@@ -134,45 +134,68 @@ export default function ProblemSection() {
   return (
     <section className="section problem-section" ref={ref} id="solutions">
       <div className="problem-grid">
-        <motion.div
-          className="problem-canvas-area"
-          initial={{ opacity: 0, x: -60 }}
-          animate={inView ? { opacity: 1, x: 0 } : {}}
-          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 0 80px rgba(255,45,85,0.08), 0 30px 80px rgba(0,0,0,0.6)' }}
-        >
-          <ProblemCanvas />
-          <div style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0,
-            padding: '24px',
-            background: 'linear-gradient(to top, rgba(255,45,85,0.12), transparent)',
-          }}>
-            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, letterSpacing: '0.2em', color: 'rgba(255,45,85,0.8)' }}>
-              ● LIVE FEED — NO AI MONITORING ACTIVE
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <motion.div
+            className="problem-canvas-area"
+            initial={{ opacity: 0, x: -60 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 0 80px rgba(255,45,85,0.08), 0 30px 80px rgba(0,0,0,0.6)' }}
+          >
+            <ProblemCanvas />
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              padding: '24px',
+              background: 'linear-gradient(to top, rgba(255,45,85,0.12), transparent)',
+            }}>
+              <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, letterSpacing: '0.2em', color: 'rgba(255,45,85,0.8)' }}>
+                ● LIVE FEED — NO AI MONITORING ACTIVE
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        <div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ delay: 0.6 }}
+            style={{
+              padding: '20px',
+              background: 'rgba(255,45,85,0.05)',
+              border: '1px solid rgba(255,45,85,0.15)',
+              display: 'flex',
+              gap: 16,
+              alignItems: 'center',
+              borderRadius: 4,
+            }}
+          >
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: '#FF2D55', letterSpacing: '0.02em', lineHeight: 1, fontWeight: 700 }}>$7B+</div>
+            <div>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 500, letterSpacing: '0.06em', color: '#F0EDE8' }}>Annual industrial injury cost</div>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 300, color: 'rgba(240,237,232,0.4)', marginTop: 3, letterSpacing: '0.04em' }}>95% of incidents are preventable</div>
+            </div>
+          </motion.div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7 }}
           >
             <div className="section-label">The Problem</div>
-            <h2 className="section-title-xl" style={{ marginBottom: 40 }}>
+            <h2 className="section-title-xl" style={{ marginBottom: 32, lineHeight: 1.2 }}>
               Manual<br />monitoring is<br /><em>broken.</em>
             </h2>
           </motion.div>
 
-          <div className="problem-cards">
+          <div className="problem-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 24 }}>
             {problems.map((p, i) => (
               <motion.div
                 key={p.num}
                 className="problem-card"
                 initial={{ opacity: 0, x: 40 }}
                 animate={inView ? { opacity: 1, x: 0 } : {}}
-                transition={{ delay: i * 0.1 + 0.3, duration: 0.6 }}
+                transition={{ delay: i * 0.08 + 0.2, duration: 0.6 }}
               >
                 <div className="problem-card-num">— {p.num}</div>
                 <div className="problem-card-title">{p.title}</div>
@@ -180,27 +203,6 @@ export default function ProblemSection() {
               </motion.div>
             ))}
           </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={inView ? { opacity: 1 } : {}}
-            transition={{ delay: 0.8 }}
-            style={{
-              marginTop: 32,
-              padding: '24px',
-              background: 'rgba(255,45,85,0.05)',
-              border: '1px solid rgba(255,45,85,0.15)',
-              display: 'flex',
-              gap: 20,
-              alignItems: 'center',
-            }}
-          >
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, color: '#FF2D55', letterSpacing: '0.02em', lineHeight: 1 }}>$7B+</div>
-            <div>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 500, letterSpacing: '0.08em', color: '#F0EDE8' }}>Annual industrial injury cost</div>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 300, color: 'rgba(240,237,232,0.4)', marginTop: 4, letterSpacing: '0.04em' }}>95% of incidents are preventable</div>
-            </div>
-          </motion.div>
         </div>
       </div>
     </section>
