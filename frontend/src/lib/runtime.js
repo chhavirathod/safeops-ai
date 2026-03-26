@@ -5,8 +5,8 @@ export function isElectronApp() {
 }
 
 export function getWarehousePageUrl() {
-  if (typeof window === 'undefined') return '/warehouse.html'
-  return new URL('./warehouse.html', window.location.href).href
+  if (typeof window === 'undefined') return '/alert/index.html'
+  return new URL('./alert/index.html', window.location.href).href
 }
 
 export function scrollToSection(sectionId) {
