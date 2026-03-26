@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 from tempfile import NamedTemporaryFile
+import json
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,6 +49,73 @@ def with_absolute_artifact_urls(report: dict, request: Request) -> dict:
         for key, value in report["artifacts"].items()
     }
     return report
+
+
+def latest_report_path() -> Path | None:
+    report_paths = sorted((BACKEND_DIR / "outputs").glob("*/report.json"))
+    return report_paths[-1] if report_paths else None
+
+
+def infer_area_from_position(position: dict | None) -> str:
+    if not position:
+        return "Unassigned"
+
+    x_percent = float(position.get("x_percent", 0.0))
+    y_percent = float(position.get("y_percent", 0.0))
+
+    if x_percent >= 0.7:
+        return "Hazard Zone"
+    if x_percent < 0.42:
+        return "Zone A" if y_percent < 0.62 else "Zone B"
+    if y_percent < 0.42:
+        return "Eating Area"
+    return "Zone B"
+
+
+def build_legacy_detection_payload(report: dict | None) -> dict:
+    if not report:
+        return {
+            "timestamp": None,
+            "frame_id": 0,
+            "fps": 0,
+            "model_version": "Warehouse Compliance Backend",
+            "analysis_id": None,
+            "persons": [],
+        }
+
+    runtime = report.get("runtime", {})
+    people = report.get("people", [])
+    persons = []
+    for person in people:
+        position = person.get("position", {})
+        persons.append(
+            {
+                "id": person.get("id"),
+                "x": position.get("x", 0),
+                "y": position.get("y", 0),
+                "bbox": person.get("bbox", {}),
+                "area": infer_area_from_position(position),
+                "confidence": person.get("confidence", 0),
+                "violations": person.get("violations", []),
+                "ppe_status": {
+                    "helmet": bool(person.get("ppe_status", {}).get("helmet")),
+                    "vest": bool(person.get("ppe_status", {}).get("vest")),
+                    "gloves": False,
+                },
+                "time_detected": report.get("timestamp"),
+                "risk_score": person.get("risk_score", 0),
+                "safety_status": person.get("safety_status", "UNKNOWN"),
+            }
+        )
+
+    return {
+        "timestamp": report.get("timestamp"),
+        "frame_id": runtime.get("processed_frames", 0),
+        "fps": runtime.get("fps", 0),
+        "model_version": report.get("model", {}).get("detector_model", "Warehouse Compliance Backend"),
+        "analysis_id": report.get("analysis_id"),
+        "persons": persons,
+    }
 
 
 def playground_html() -> str:
@@ -299,6 +367,20 @@ async def health() -> dict:
 @app.get("/api/model-info")
 async def model_info() -> dict:
     return service.get_model_info()
+
+
+@app.get("/api/detect")
+async def detect_compat() -> dict:
+    report_path = latest_report_path()
+    if report_path is None:
+        return build_legacy_detection_payload(None)
+
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=f"Could not read latest report: {error}") from error
+
+    return build_legacy_detection_payload(report)
 
 
 @app.post("/api/analyze")

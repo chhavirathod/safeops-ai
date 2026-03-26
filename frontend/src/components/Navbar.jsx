@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
+import { scrollToSection } from '../lib/runtime'
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 60)
@@ -22,20 +25,28 @@ export default function Navbar() {
           <path d="M10 1L18 5.5V14.5L10 19L2 14.5V5.5L10 1Z" stroke="#FF6B1A" strokeWidth="1.5" fill="none"/>
           <circle cx="10" cy="10" r="3" fill="#FF6B1A"/>
         </svg>
-        <a href="#" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <button
+          onClick={() => navigate('/')}
+          style={{ textDecoration: 'none', color: 'inherit', background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }}
+        >
           SAFEGUARD<span>AI</span>
-        </a>
+        </button>
       </div>
 
       <ul className="nav-links">
         {['Solutions', 'Analytics'].map(item => (
           <li key={item}>
-            <a href={`#${item.toLowerCase()}`}>{item}</a>
+            <button
+              onClick={() => scrollToSection(item.toLowerCase())}
+              style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', padding: 0 }}
+            >
+              {item}
+            </button>
           </li>
         ))}
       </ul>
 
-      <button className="nav-cta" onClick={() => window.location.href = '/dashboard'}>
+      <button className="nav-cta" onClick={() => navigate('/dashboard')}>
         Dashboard →
       </button>
     </motion.nav>

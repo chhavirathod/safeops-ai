@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { AuthProvider } from './lib/AuthContext'
 import LoadingScreen from './components/Loadingscreen'
 import CustomCursor from './components/Customcursor'
@@ -12,6 +12,7 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './dashboard/DashboardPage'
 import ProtectedRoute from './ProtectedRoute'
 import { AnimatePresence, motion } from 'framer-motion'
+import { getWarehousePageUrl, isElectronApp } from './lib/runtime'
 
 function AlertPage() {
   const navigate = useNavigate()
@@ -62,7 +63,7 @@ function AlertPage() {
       <iframe
         ref={iframeRef}
         title="Three.js Warehouse Alert"
-        src="/warehouse.html"
+        src={getWarehousePageUrl()}
         tabIndex={-1}
         onLoad={() => {
           iframeRef.current?.focus()
@@ -100,9 +101,11 @@ function HomePage() {
 }
  
 export default function App() {
+  const Router = isElectronApp() ? HashRouter : BrowserRouter
+
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <Router>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/three.js" element={<AlertPage />} />
@@ -110,7 +113,7 @@ export default function App() {
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </Router>
     </AuthProvider>
   )
 }

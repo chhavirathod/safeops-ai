@@ -3,117 +3,176 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { fetchDetections } from '../lib/mockData'
+import { fetchAlarmDashboard } from '../lib/alerts'
+import { fetchViolationDashboard } from '../lib/violationLogs'
 import DashboardSidebar from './Sidebar'
 import DashboardHeader from './Header'
-import { ZoneMapTab } from './LiveAndZoneTabs'
+import { AreaInsightsTab } from './LiveAndZoneTabs'
 import { ViolationsTab, AnalyticsTab } from './WorkerTabs'
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState('analytics')
   const [detections, setDetections] = useState(null)
+  const [alarmData, setAlarmData] = useState(null)
+  const [violationData, setViolationData] = useState(null)
   const [lastRefresh, setLastRefresh] = useState(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
 
-  // Auth guard
   useEffect(() => {
     if (!loading && !user) navigate('/login', { replace: true })
   }, [user, loading, navigate])
 
-  // Fetch data
   const refresh = useCallback(async () => {
-    const data = await fetchDetections()
-    setDetections(data)
+    const [detectionData, alarmDashboard, violationDashboard] = await Promise.all([
+      fetchDetections(),
+      fetchAlarmDashboard(),
+      fetchViolationDashboard(),
+    ])
+    setDetections(detectionData)
+    setAlarmData(alarmDashboard)
+    setViolationData(violationDashboard)
     setLastRefresh(new Date())
   }, [])
 
   useEffect(() => {
     refresh()
-  }, [])
+  }, [refresh])
 
   useEffect(() => {
     if (!autoRefresh) return
-    const interval = setInterval(refresh, 5000) // refresh every 5s
+    const interval = setInterval(refresh, 5000)
     return () => clearInterval(interval)
   }, [autoRefresh, refresh])
 
-  if (loading || !user) return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: '#000',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{
-        width: 40, height: 40, borderRadius: '50%',
-        border: '2px solid rgba(255,255,255,0.1)',
-        borderTopColor: '#FF6B1A',
-        animation: 'spin 0.8s linear infinite',
-      }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  )
+  if (loading || !user) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: '#000',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            border: '2px solid rgba(255,255,255,0.1)',
+            borderTopColor: '#FF6B1A',
+            animation: 'spin 0.8s linear infinite',
+          }}
+        />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
 
   const tabContent = () => {
     switch (activeTab) {
-      case 'violations':return <ViolationsTab detections={detections} />
-      case 'analytics': return <AnalyticsTab />
-      case 'zones':     return <ZoneMapTab detections={detections} />
-      default:          return <AnalyticsTab detections={detections} />
+      case 'violations':
+        return <ViolationsTab detections={detections} violationData={violationData} />
+      case 'zones':
+        return <AreaInsightsTab alarmData={alarmData} />
+      default:
+        return <AnalyticsTab detections={detections} />
     }
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      height: '100vh',
-      background: '#050505',
-      fontFamily: "'Barlow Condensed', sans-serif",
-      color: '#F0EDE8',
-      overflow: 'hidden',
-      position: 'relative',
-    }}>
-      {/* Noise overlay */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 9998, pointerEvents: 'none',
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
-        opacity: 0.018,
-      }} />
+    <div
+      style={{
+        display: 'flex',
+        height: '100vh',
+        background: '#050505',
+        fontFamily: "'Barlow Condensed', sans-serif",
+        color: '#F0EDE8',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9998,
+          pointerEvents: 'none',
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")",
+          opacity: 0.018,
+        }}
+      />
 
-      {/* Sidebar */}
       <DashboardSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Main area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-        {/* Header */}
-        <DashboardHeader activeTab={activeTab} detections={detections} />
+        <DashboardHeader activeTab={activeTab} detections={detections} alarmData={alarmData} violationData={violationData} />
 
-        {/* Tab content */}
-        <main style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '24px 28px',
-          scrollbarWidth: 'thin',
-          scrollbarColor: '#FF6B1A #111',
-        }}>
-          {/* Refresh bar */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            gap: 14,
-            marginBottom: 20,
-          }}>
+        <main
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '24px 28px',
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#FF6B1A #111',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: 14,
+              marginBottom: 20,
+            }}
+          >
             {lastRefresh && (
-              <span style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 9,
-                color: 'rgba(240,237,232,0.2)',
-                letterSpacing: '0.1em',
-              }}>
+              <span
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 9,
+                  color: 'rgba(240,237,232,0.2)',
+                  letterSpacing: '0.1em',
+                }}
+              >
                 Last updated: {lastRefresh.toLocaleTimeString('en-US', { hour12: false })}
               </span>
             )}
+            {activeTab === 'zones' || activeTab === 'violations' ? (
+              <span
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 9,
+                  color:
+                    activeTab === 'zones'
+                      ? alarmData?.source === 'supabase'
+                        ? '#00C48C'
+                        : '#FFB703'
+                      : violationData?.source === 'supabase'
+                        ? '#00C48C'
+                        : violationData?.source === 'supabase-error'
+                          ? '#FF2D55'
+                          : '#FFB703',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {activeTab === 'zones'
+                  ? alarmData?.source === 'supabase'
+                    ? 'Supabase Live'
+                    : 'Mock Fallback'
+                  : violationData?.source === 'supabase'
+                    ? `Supabase Live${violationData?.tableName ? ` · ${violationData.tableName}` : ''}`
+                    : violationData?.source === 'supabase-error'
+                      ? `Supabase Error${violationData?.tableName ? ` · ${violationData.tableName}` : ''}`
+                      : 'Mock Fallback'}
+              </span>
+            ) : null}
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
               style={{
@@ -146,8 +205,12 @@ export default function DashboardPage() {
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,107,26,0.2)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,107,26,0.1)'}
+              onMouseEnter={(event) => {
+                event.currentTarget.style.background = 'rgba(255,107,26,0.2)'
+              }}
+              onMouseLeave={(event) => {
+                event.currentTarget.style.background = 'rgba(255,107,26,0.1)'
+              }}
             >
               ↺ Refresh
             </button>
@@ -167,7 +230,6 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* Font import */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&family=Oswald:wght@200;300;400;500;600;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }

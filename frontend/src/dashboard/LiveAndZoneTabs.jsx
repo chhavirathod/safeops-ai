@@ -1,220 +1,264 @@
-import { useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ZONE_LAYOUT } from '../lib/mockData'
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts'
 
-// ══════════════════════════════════════════════
-//  ZONE MAP TAB — Heatmap
-// ══════════════════════════════════════════════
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.lineTo(x + w - r, y)
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
-  ctx.lineTo(x + w, y + h - r)
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
-  ctx.lineTo(x + r, y + h)
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
-  ctx.lineTo(x, y + r)
-  ctx.quadraticCurveTo(x, y, x + r, y)
-  ctx.closePath()
-}
-
-function ZoneHeatmapCanvas({ persons }) {
-  const ref = useRef(null)
-
-  useEffect(() => {
-    const canvas = ref.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    const resize = () => {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
-    }
-    resize()
-    window.addEventListener('resize', resize)
-
-    let prog = 0
-    const draw = () => {
-      prog = Math.min(prog + 0.02, 1)
-      const W = canvas.offsetWidth, H = canvas.offsetHeight
-      ctx.clearRect(0, 0, W, H)
-
-      ctx.fillStyle = '#07090e'
-      ctx.fillRect(0, 0, W, H)
-
-      // Grid
-      ctx.strokeStyle = 'rgba(255,255,255,0.04)'
-      ctx.lineWidth = 0.5
-      for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke() }
-      for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke() }
-
-      // Zones
-      Object.entries(ZONE_LAYOUT).forEach(([name, z]) => {
-        const zx = z.x * W, zy = z.y * H, zw = z.w * W, zh = z.h * H
-        const hex = z.color.replace('#', '')
-        const r = parseInt(hex.substring(0, 2), 16)
-        const g = parseInt(hex.substring(2, 4), 16)
-        const b = parseInt(hex.substring(4, 6), 16)
-
-        ctx.save()
-        ctx.fillStyle = `rgba(${r},${g},${b},0.04)`
-        ctx.strokeStyle = `rgba(${r},${g},${b},0.25)`
-        ctx.lineWidth = 1.5
-        ctx.setLineDash([6, 4])
-        ctx.fillRect(zx, zy, zw, zh)
-        ctx.strokeRect(zx, zy, zw, zh)
-        ctx.setLineDash([])
-        ctx.fillStyle = `rgba(${r},${g},${b},0.7)`
-        ctx.font = `bold 10px 'JetBrains Mono', monospace`
-        ctx.fillText(name.toUpperCase(), zx + 8, zy + 16)
-        ctx.restore()
-      })
-
-      // Heatmap blobs per person
-      persons.forEach((p) => {
-        const px = (p.x / 1000) * W
-        const py = (p.y / 600) * H
-        const intensity = prog * (p.risk_score / 10 + 0.3)
-        const radius = 80 * prog
-
-        const isHigh = p.risk_score >= 7
-        const isMed = p.risk_score >= 4
-
-        const gradient = ctx.createRadialGradient(px, py, 0, px, py, radius)
-        if (isHigh) {
-          gradient.addColorStop(0, `rgba(255,45,85,${0.5 * intensity})`)
-          gradient.addColorStop(0.4, `rgba(255,107,26,${0.25 * intensity})`)
-          gradient.addColorStop(1, 'transparent')
-        } else if (isMed) {
-          gradient.addColorStop(0, `rgba(255,184,0,${0.4 * intensity})`)
-          gradient.addColorStop(1, 'transparent')
-        } else {
-          gradient.addColorStop(0, `rgba(0,196,140,${0.3 * intensity})`)
-          gradient.addColorStop(1, 'transparent')
-        }
-
-        ctx.fillStyle = gradient
-        ctx.beginPath(); ctx.arc(px, py, radius, 0, Math.PI * 2); ctx.fill()
-
-        // Person dot
-        const c = isHigh ? '#FF2D55' : isMed ? '#FFB800' : '#00C48C'
-        ctx.fillStyle = c
-        ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill()
-
-        // ID
-        ctx.fillStyle = 'rgba(0,0,0,0.7)'
-        ctx.beginPath()
-        roundRect(ctx, px - 14, py - 22, 28, 14, 3)
-        ctx.fill()
-        ctx.fillStyle = c
-        ctx.font = `bold 8px 'JetBrains Mono', monospace`
-        ctx.textAlign = 'center'
-        ctx.fillText(p.id, px, py - 12)
-        ctx.textAlign = 'left'
-      })
-
-      if (prog < 1) requestAnimationFrame(draw)
-      else requestAnimationFrame(draw) // keep running for animation
-    }
-    requestAnimationFrame(draw)
-    return () => window.removeEventListener('resize', resize)
-  }, [persons])
-
-  return <canvas ref={ref} style={{ width: '100%', height: '100%', display: 'block' }} />
-}
-
-export function ZoneMapTab({ detections }) {
-  const persons = detections?.persons || []
-
-  // Zone stats
-  const zoneStats = {}
-  persons.forEach(p => {
-    if (!zoneStats[p.area]) zoneStats[p.area] = { total: 0, violations: 0, avgRisk: 0 }
-    zoneStats[p.area].total++
-    if (p.violations.length > 0) zoneStats[p.area].violations++
-    zoneStats[p.area].avgRisk += p.risk_score
-  })
-  Object.keys(zoneStats).forEach(z => {
-    zoneStats[z].avgRisk = (zoneStats[z].avgRisk / zoneStats[z].total).toFixed(1)
-  })
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 16 }}>
-      <div style={{
-        background: '#0a0a0a',
+    <div
+      style={{
+        background: 'rgba(8,8,8,0.95)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 8,
+        padding: '10px 14px',
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 11,
+      }}
+    >
+      {label ? <div style={{ color: 'rgba(240,237,232,0.5)', marginBottom: 6 }}>{label}</div> : null}
+      {payload.map((item) => (
+        <div key={item.name} style={{ color: item.color || '#F0EDE8' }}>
+          {item.name}: <strong>{item.value}</strong>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Panel({ title, eyebrow, children, minHeight }) {
+  return (
+    <div
+      style={{
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.015) 100%)',
         border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: 4,
-        overflow: 'hidden',
-        minHeight: 540,
-      }}>
-        <ZoneHeatmapCanvas persons={persons} />
+        borderRadius: 10,
+        padding: 18,
+        minHeight,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+      }}
+    >
+      {eyebrow ? (
+        <div
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 9,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'rgba(240,237,232,0.28)',
+            marginBottom: 8,
+          }}
+        >
+          {eyebrow}
+        </div>
+      ) : null}
+      <div
+        style={{
+          fontFamily: "'Oswald', sans-serif",
+          fontSize: 15,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: '#F0EDE8',
+          marginBottom: 14,
+        }}
+      >
+        {title}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+export function AreaInsightsTab({ alarmData }) {
+  const rooms = alarmData?.locationData ?? []
+  const typeBreakdown = alarmData?.typeBreakdown ?? []
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1.2fr 0.8fr',
+          gap: 18,
+        }}
+      >
+        <Panel title="Room Frequency Matrix" eyebrow="Hotspots" minHeight={360}>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={rooms} barCategoryGap={18}>
+              <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+              <XAxis dataKey="location" tick={{ fill: 'rgba(240,237,232,0.45)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'rgba(240,237,232,0.35)', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip content={<ChartTooltip />} />
+              <Bar dataKey="fire" name="Fire" fill="#FF5A36" radius={[5, 5, 0, 0]} />
+              <Bar dataKey="fall" name="Fall" fill="#FFB703" radius={[5, 5, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Panel>
+
+        <Panel title="Alert Type Split" eyebrow="Composition" minHeight={360}>
+          <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={typeBreakdown}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={68}
+                  outerRadius={96}
+                  paddingAngle={3}
+                  stroke="rgba(5,5,5,0.9)"
+                >
+                  {typeBreakdown.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<ChartTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {typeBreakdown.map((entry) => (
+              <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    background: entry.color,
+                    boxShadow: `0 0 16px ${entry.color}`,
+                  }}
+                />
+                <span style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 14, color: 'rgba(240,237,232,0.72)' }}>
+                  {entry.name}
+                </span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#F0EDE8' }}>{entry.value}</span>
+              </div>
+            ))}
+          </div>
+        </Panel>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 4,
-          padding: '16px',
-        }}>
-          <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,237,232,0.4)', marginBottom: 12 }}>
-            Zone Risk Heatmap
-          </div>
-          {/* Legend */}
-          {[
-            { color: '#FF2D55', label: 'High Risk (score 7-10)', range: 'Critical violations' },
-            { color: '#FFB800', label: 'Medium Risk (4-6)', range: 'Minor violations' },
-            { color: '#00C48C', label: 'Low Risk (0-3)', range: 'Compliant' },
-          ].map(l => (
-            <div key={l.color} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: l.color, flexShrink: 0, marginTop: 2 }} />
-              <div>
-                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 400, color: 'rgba(240,237,232,0.6)' }}>{l.label}</div>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: 'rgba(240,237,232,0.25)', marginTop: 1 }}>{l.range}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {Object.entries(ZONE_LAYOUT).map(([name, z]) => {
-          const stats = zoneStats[name] || { total: 0, violations: 0, avgRisk: '0.0' }
-          const compliance = stats.total > 0 ? Math.round(((stats.total - stats.violations) / stats.total) * 100) : 100
-          return (
-            <motion.div
-              key={name}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: 14,
+        }}
+      >
+        {rooms.map((room, index) => (
+          <motion.div
+            key={room.location}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+            style={{
+              borderRadius: 10,
+              padding: 18,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))',
+              border: '1px solid rgba(255,255,255,0.07)',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <div
               style={{
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                borderLeft: `3px solid ${z.color}`,
-                borderRadius: 4,
-                padding: '14px 16px',
+                position: 'absolute',
+                inset: 0,
+                background:
+                  room.fire > room.fall
+                    ? 'radial-gradient(circle at top right, rgba(255,90,54,0.18), transparent 40%)'
+                    : 'radial-gradient(circle at top right, rgba(255,183,3,0.18), transparent 40%)',
+                pointerEvents: 'none',
               }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 14, fontWeight: 500, letterSpacing: '0.06em', color: '#F0EDE8' }}>{name}</span>
-                <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, letterSpacing: '0.02em', color: z.color }}>{stats.total}</span>
+            />
+
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 18, letterSpacing: '0.05em', color: '#F0EDE8' }}>
+                    {room.location}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 9,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(240,237,232,0.25)',
+                    }}
+                  >
+                    Rank #{room.rank}
+                  </div>
+                </div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 34, color: '#FF6B1A' }}>{room.total}</div>
               </div>
-              <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 2, marginBottom: 8, overflow: 'hidden' }}>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${compliance}%` }}
-                  transition={{ duration: 1, delay: 0.5 }}
-                  style={{ height: '100%', background: z.color, borderRadius: 2 }}
+
+              <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden', marginBottom: 12 }}>
+                <div
+                  style={{
+                    width: `${Math.min(room.share, 100)}%`,
+                    height: '100%',
+                    borderRadius: 999,
+                    background: 'linear-gradient(90deg, #FF5A36 0%, #FFB703 100%)',
+                  }}
                 />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: 'rgba(240,237,232,0.3)' }}>{compliance}% compliant</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: stats.violations > 0 ? '#FF2D55' : '#00C48C' }}>
-                  {stats.violations} violation{stats.violations !== 1 ? 's' : ''}
-                </span>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+                <StatLine label="Fire" value={room.fire} color="#FF5A36" />
+                <StatLine label="Fall" value={room.fall} color="#FFB703" />
+                <StatLine label="Share" value={`${room.share}%`} color="#7C5CFF" />
+                <StatLine label="Latest" value={room.latestLabel} color="#00C48C" mono />
               </div>
-            </motion.div>
-          )
-        })}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function StatLine({ label, value, color, mono = false }) {
+  return (
+    <div
+      style={{
+        padding: '10px 12px',
+        borderRadius: 8,
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.05)',
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 8,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: 'rgba(240,237,232,0.3)',
+          marginBottom: 5,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: mono ? "'JetBrains Mono', monospace" : "'Barlow Condensed', sans-serif",
+          fontSize: mono ? 10 : 18,
+          fontWeight: mono ? 400 : 600,
+          color,
+        }}
+      >
+        {value}
       </div>
     </div>
   )

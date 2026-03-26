@@ -234,6 +234,13 @@ body::before {
   gap: 10px;
 }
 
+.nav-logo button {
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
 .nav-logo span { color: var(--orange); }
 
 .nav-links {
@@ -242,7 +249,8 @@ body::before {
   list-style: none;
 }
 
-.nav-links a {
+.nav-links a,
+.nav-links button {
   font-family: var(--font-subheading);
   font-size: 13px;
   font-weight: 500;
@@ -253,7 +261,8 @@ body::before {
   transition: color 0.2s;
 }
 
-.nav-links a:hover { color: var(--off-white); }
+.nav-links a:hover,
+.nav-links button:hover { color: var(--off-white); }
 
 .nav-cta {
   font-family: var(--font-subheading);

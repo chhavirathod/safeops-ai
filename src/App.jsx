@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import Scene from './components/Scene'
 import Worker from './components/Worker'
 import Controls from './components/Controls'
+import { isAlarmConfigured, triggerAlarm } from './lib/alarms'
 
 const INCIDENT_WEBHOOK_URL = 'https://aagnya.app.n8n.cloud/webhook-test/incident-alert'
 const INCIDENT_DURATION_MS = 20000
@@ -233,6 +234,7 @@ export default function App() {
         vest: 100,
         gloves: 100,
     })
+    const missingConfigNoticeShownRef = useRef(false)
     const currentArea = selectedRoomIndex === null ? HUB_AREA : ROOM_LIBRARY[selectedRoomIndex]
 
     useEffect(() => {
@@ -382,6 +384,42 @@ export default function App() {
         setIncidentNotifications((prev) => [...prev.slice(-2), notification])
     }
 
+    const syncAlarm = async ({ location, isFire, isFall }) => {
+        if (!isAlarmConfigured) {
+            if (!missingConfigNoticeShownRef.current) {
+                missingConfigNoticeShownRef.current = true
+                pushIncidentNotification(
+                    'Supabase Not Configured',
+                    'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to sync alarms.',
+                    'error'
+                )
+            }
+            return
+        }
+
+        const { error } = await triggerAlarm({
+            location,
+            isFire,
+            isFall,
+        })
+
+        if (error) {
+            console.error('Failed to sync alarm:', error)
+            pushIncidentNotification(
+                'Supabase Alarm Failed',
+                `Could not trigger the alarm for ${location}.`,
+                'error'
+            )
+            return
+        }
+
+        pushIncidentNotification(
+            'Supabase Alarm Triggered',
+            `${location} synced with fire=${isFire} and fall=${isFall}.`,
+            'success'
+        )
+    }
+
     const sendIncidentWebhook = async ({ eventType, severity, details, location, responderLabel }) => {
         pushIncidentNotification(
             `${responderLabel} Alert`,
@@ -418,6 +456,11 @@ export default function App() {
             ...prev,
             [currentArea.id]: startedAt,
         }))
+        void syncAlarm({
+            location: currentArea.name,
+            isFire: true,
+            isFall: false,
+        })
         void sendIncidentWebhook({
             eventType: 'fire',
             severity: 'high',
@@ -435,6 +478,11 @@ export default function App() {
         setLadderFallState({
             trigger: Date.now(),
             areaId: currentArea.id,
+        })
+        void syncAlarm({
+            location: currentArea.name,
+            isFire: false,
+            isFall: true,
         })
         void sendIncidentWebhook({
             eventType: 'accident',

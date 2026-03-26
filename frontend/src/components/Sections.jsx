@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 
 // ── FEATURES ─────────────────────────────────────
 export function FeaturesSection() {
@@ -60,6 +61,7 @@ export function FeaturesSection() {
 export function CTASection() {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
+  const navigate = useNavigate()
 
   return (
     <section className="cta-section" ref={ref}>
@@ -98,7 +100,7 @@ export function CTASection() {
           transition={{ delay: 0.4, duration: 0.7 }}
           style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 48 }}
         >
-          <button className="btn-primary" onClick={() => window.location.href = '/dashboard'}>
+          <button className="btn-primary" onClick={() => navigate('/dashboard')}>
             Go to Dashboard
           </button>
           <button className="btn-ghost">

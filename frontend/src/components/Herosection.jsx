@@ -60,7 +60,7 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.1, duration: 0.7 }}
         >
-          <button className="btn-primary" onClick={() => window.location.href = '/dashboard'}>
+          <button className="btn-primary" onClick={() => navigate('/dashboard')}>
             Enter Dashboard
           </button>
           <button className="btn-ghost" onClick={() => navigate(ALERT_ROUTE)}>

@@ -6,9 +6,11 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from urllib import error as urllib_error
+from urllib import request as urllib_request
 
 import cv2
 import numpy as np
@@ -62,6 +64,33 @@ def resolve_yolo_model_path() -> Path:
 
 
 YOLO_MODEL_PATH = resolve_yolo_model_path()
+
+
+def read_env_value(name: str) -> str:
+    direct = os.getenv(name)
+    if direct:
+        return direct
+
+    env_path = ROOT_DIR / ".env"
+    if not env_path.exists():
+        return ""
+
+    try:
+        for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            if key.strip() == name:
+                return value.strip().strip('"').strip("'")
+    except OSError:
+        return ""
+    return ""
+
+
+SUPABASE_URL = read_env_value("SUPABASE_URL") or read_env_value("VITE_SUPABASE_URL")
+SUPABASE_ANON_KEY = read_env_value("SUPABASE_ANON_KEY") or read_env_value("VITE_SUPABASE_ANON_KEY")
+SUPABASE_LOGS_TABLE = read_env_value("SUPABASE_PPE_LOGS_TABLE") or "logs"
 
 
 def now_iso() -> str:
@@ -586,6 +615,8 @@ class ComplianceService:
         report["artifacts"]["source_url"] = make_relative_output_path(source_copy)
 
         report_path = run_dir / "report.json"
+        sync_result = self._sync_supabase_logs(report)
+        report["runtime"]["supabase_logs"] = sync_result
         report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
         report["artifacts"]["report_url"] = make_relative_output_path(report_path)
         return report
@@ -819,3 +850,118 @@ class ComplianceService:
                 for person in people
             ],
         }
+
+    def _sync_supabase_logs(self, report: dict[str, Any]) -> dict[str, Any]:
+        if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+            return {"enabled": False, "inserted": 0, "table": SUPABASE_LOGS_TABLE}
+
+        timestamp_raw = report.get("timestamp")
+        try:
+            report_timestamp = datetime.fromisoformat(str(timestamp_raw)) if timestamp_raw else datetime.now(timezone.utc)
+        except ValueError:
+            report_timestamp = datetime.now(timezone.utc)
+
+        start_id = self._next_supabase_log_id()
+        if start_id is None:
+            return {
+                "enabled": True,
+                "inserted": 0,
+                "table": SUPABASE_LOGS_TABLE,
+                "error": "Could not determine next log ID from Supabase",
+            }
+
+        rows: list[dict[str, str | int]] = []
+        row_offset = 0
+        for person in report.get("summary", {}).get("people_status", []):
+            for violation in person.get("violations", []):
+                row_timestamp = report_timestamp + timedelta(seconds=row_offset)
+                rows.append(
+                    {
+                        "ID": start_id + row_offset,
+                        "date": row_timestamp.date().isoformat(),
+                        "time": row_timestamp.strftime("%H:%M:%S"),
+                        "violation": str(violation),
+                    }
+                )
+                row_offset += 1
+
+        if not rows:
+            return {"enabled": True, "inserted": 0, "table": SUPABASE_LOGS_TABLE}
+
+        endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/{SUPABASE_LOGS_TABLE}"
+        payload = json.dumps(rows).encode("utf-8")
+        req = urllib_request.Request(
+            endpoint,
+            data=payload,
+            method="POST",
+            headers={
+                "Content-Type": "application/json",
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+                "Prefer": "return=minimal",
+            },
+        )
+        try:
+            with urllib_request.urlopen(req, timeout=10) as response:
+                status_code = getattr(response, "status", 200)
+            return {
+                "enabled": True,
+                "inserted": len(rows),
+                "table": SUPABASE_LOGS_TABLE,
+                "status_code": status_code,
+            }
+        except urllib_error.HTTPError as exc:
+            error_body = ""
+            try:
+                error_body = exc.read().decode("utf-8", errors="replace")
+            except Exception:
+                error_body = ""
+            return {
+                "enabled": True,
+                "inserted": 0,
+                "table": SUPABASE_LOGS_TABLE,
+                "status_code": exc.code,
+                "error": exc.reason,
+                "details": error_body or None,
+            }
+        except Exception as exc:
+            return {
+                "enabled": True,
+                "inserted": 0,
+                "table": SUPABASE_LOGS_TABLE,
+                "error": str(exc),
+            }
+
+    def _next_supabase_log_id(self) -> int | None:
+        endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/{SUPABASE_LOGS_TABLE}?select=ID&order=ID.desc&limit=1"
+        req = urllib_request.Request(
+            endpoint,
+            method="GET",
+            headers={
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+            },
+        )
+
+        try:
+            with urllib_request.urlopen(req, timeout=10) as response:
+                payload = response.read().decode("utf-8")
+        except Exception:
+            return None
+
+        try:
+            rows = json.loads(payload)
+        except json.JSONDecodeError:
+            return None
+
+        if not isinstance(rows, list) or not rows:
+            return 1
+
+        current_id = rows[0].get("ID")
+        if isinstance(current_id, int):
+            return current_id + 1
+
+        try:
+            return int(current_id) + 1
+        except (TypeError, ValueError):
+            return None

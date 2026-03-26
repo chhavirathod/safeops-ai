@@ -1,23 +1,11 @@
 // ════════════════════════════════════════════════════════════
-//  SAFEGUARD AI — MOCK DATA & API LAYER
-//  Replace ML_API_ENDPOINT with your actual model endpoint
+//  SAFEGUARD AI — LOCAL MOCK DETECTION SNAPSHOT
+//  Dashboard logs/alerts come from Supabase. This file only
+//  powers the non-log analytics widgets without polling backend.
 // ════════════════════════════════════════════════════════════
 
-export const ML_API_ENDPOINT = import.meta.env.VITE_ML_API_URL || 'http://localhost:8000/api/detect'
-
-// ── Live detection fetch (replace hardcoded data when ready) ──
 export async function fetchDetections() {
-  try {
-    const res = await fetch(ML_API_ENDPOINT, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    })
-    if (!res.ok) throw new Error('API not available')
-    return await res.json()
-  } catch {
-    // Return hardcoded mock data while ML model is not connected
-    return MOCK_DETECTIONS
-  }
+  return MOCK_DETECTIONS
 }
 
 // ── MOCK DATA — mirrors ML model output format ──────────────
