@@ -1,47 +1,134 @@
-# CircleAI 
-## File Structure
+# SafeOpsAI — Full Stack PPE Compliance Platform
+
+A cinematic React homepage + full supervisor dashboard with Google OAuth via Supabase.
+
+## 📁 Complete Folder Structure
 
 ```
-src/
-  lib/
-    supabaseClient.js     ← Supabase init (just works)
-  pages/
-    HomePage.jsx          ← Landing page
-    LoginPage.jsx         ← Google OAuth login
-    DashboardPage.jsx     ← Dashboard shell (customize per PS)
-  App.jsx                 ← Routes: / → /login → /dashboard
+safeops-ai/
+├── index.html
+├── package.json
+├── vite.config.js
+├── .env.example            ← Copy to .env and fill keys
+├── .gitignore
+└── src/
+    ├── main.jsx
+    ├── App.jsx               # Router: / → /login → /dashboard
+    ├── ProtectedRoute.jsx    # Auth guard
+    ├── index.css             # Global styles + CSS variables
+    │
+    ├── lib/
+    │   ├── supabase.js       # Supabase client + auth helpers
+    │   ├── AuthContext.jsx   # React context for session
+    │   └── mockData.js       # Hardcoded ML output + API endpoint
+    │
+    ├── pages/
+    │   └── LoginPage.jsx     # Cinematic login with Google OAuth
+    │
+    ├── dashboard/
+    │   ├── DashboardPage.jsx # Main shell with tab routing
+    │   ├── Sidebar.jsx       # Icon sidebar with nav
+    │   ├── Header.jsx        # Status bar with live clock
+    │   ├── OverviewTab.jsx   # KPIs, trend chart, donut, radar, alerts
+    │   ├── LiveAndZoneTabs.jsx # Live feed canvas + heatmap
+    │   └── WorkerTabs.jsx    # Violations, Workers, Analytics tabs
+    │
+    └── components/           # Homepage components (unchanged)
+        ├── LoadingScreen.jsx
+        ├── CustomCursor.jsx
+        ├── Navbar.jsx
+        ├── HeroSection.jsx
+        ├── HeroCanvas.jsx
+        ├── ProblemSection.jsx
+        ├── SolutionSection.jsx
+        ├── DigitalTwinSection.jsx
+        └── Sections.jsx
 ```
 
-## Per Problem Statement – What to Swap in DashboardPage.jsx
+## 🚀 Setup
 
-### ML PS 1 – Traceability Management
-- NAV_ITEMS: Overview, Material Flow, Processing, Dispatch, Reports
-- Main viz: Material lifecycle Sankey / flow chart
-- Stats: Total kg processed, Batches today, Dispatch pending, Quality score
-- Right panel: Recent material entries
+### 1. Install dependencies
+```bash
+npm install
+```
 
-### ML PS 2 – Restaurant Oracle
-- NAV_ITEMS: Overview, Social Feed, SWOT, Competitors, Alerts
-- Main viz: Sentiment timeline chart (recharts LineChart)
-- Stats: Mentions today, Avg rating, Negative alerts, Confidence score
-- Right panel: Live alert feed from model
+### 2. Configure Supabase
+1. Create a project at https://supabase.com
+2. Enable Google OAuth in Authentication → Providers
+3. Set redirect URL to `http://localhost:5173/dashboard`
+4. Copy `.env.example` → `.env` and fill in your keys
 
-### AI PS 1 – Plastic Identification
-- NAV_ITEMS: Overview, Upload Image, Classifications, History, Reports
-- Main viz: Image upload + classified result display
-- Stats: Items scanned, Accuracy %, Misclassified, PET / HDPE breakdown
-- Right panel: Classification confidence scores
+### 3. Run
+```bash
+npm run dev
+# Open http://localhost:5173
+```
 
-### AI PS 2 – PPE Compliance
-- NAV_ITEMS: Overview, Live Feed, Violations, Workers, Reports
-- Main viz: Video feed with bounding boxes (img tag / canvas)
-- Stats: Workers detected, Compliant, Violations, Compliance %
-- Right panel: Violation alerts with timestamps
+## 🔐 Auth Flow
+```
+/ (Homepage) → "Enter Dashboard" → /login → Google OAuth → /dashboard
+```
+- Sessions persist via Supabase cookies
+- `/dashboard` is protected — unauthenticated users redirect to `/login`
+- Sign out returns to `/login`
 
+## 📊 Dashboard Tabs
 
-<!-- solution -->
+| Tab | Contents |
+|---|---|
+| **Overview** | KPI cards, compliance trend chart, zone donut, PPE radar, violation feed |
+| **Live Feed** | Animated canvas showing worker positions with bounding boxes |
+| **Violations** | Active violation cards + full log table with filters |
+| **Workers** | Per-worker PPE status cards with risk scores |
+| **Analytics** | Year-over-year charts, combined compliance+violations |
+| **Zone Map** | Risk heatmap overlay on floor plan |
 
-# SafeGuardAI — Cinematic PPE Compliance Homepage
+## 🔌 ML Model Integration
+
+The dashboard currently uses hardcoded data from `src/lib/mockData.js`.
+When your ML model is ready:
+
+1. Set `VITE_ML_API_URL` in `.env` to your endpoint
+2. The `fetchDetections()` function will auto-switch to live data
+
+**Expected JSON format from model:**
+```json
+{
+  "timestamp": "2025-01-15T14:32:11Z",
+  "frame_id": 4821,
+  "fps": 28.4,
+  "model_version": "YOLOv8-safety",
+  "persons": [
+    {
+      "id": "P1",
+      "x": 142, "y": 315,
+      "bbox": { "x1": 120, "y1": 260, "x2": 185, "y2": 380 },
+      "area": "Zone A",
+      "confidence": 0.971,
+      "violations": [],
+      "ppe_status": { "helmet": true, "vest": true, "gloves": true },
+      "time_detected": "2025-01-15T14:02:11Z",
+      "risk_score": 2
+    }
+  ]
+}
+```
+
+## 🎨 Design System
+
+| Token | Value |
+|---|---|
+| Background | `#050505` (near black) |
+| Orange accent | `#FF6B1A` |
+| Violation red | `#FF2D55` |
+| Safe green | `#00C48C` |
+| Zone blue | `#1A56FF` |
+| Display font | Bebas Neue |
+| Serif accent | Instrument Serif (italic) |
+| Heading | Oswald |
+| Body | Barlow Condensed |
+| Mono/HUD | JetBrains Mono |
+
 
 A premium, immersive React homepage for an AI-powered industrial safety platform.
 
@@ -61,7 +148,7 @@ A premium, immersive React homepage for an AI-powered industrial safety platform
 ## 📁 Folder Structure
 
 ```
-safeguard-ai/
+safeops-ai/
 ├── index.html
 ├── package.json
 ├── vite.config.js

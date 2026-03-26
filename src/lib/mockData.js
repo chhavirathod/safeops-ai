@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════
-//  SAFEGUARD AI — MOCK DATA & API LAYER
+//  SAFEOPS AI — MOCK DATA & API LAYER
 //  Replace ML_API_ENDPOINT with your actual model endpoint
 // ════════════════════════════════════════════════════════════
 
@@ -26,7 +26,7 @@ export const MOCK_DETECTIONS = {
   timestamp: new Date().toISOString(),
   frame_id: 4821,
   fps: 28.4,
-  model_version: 'SafeGuard-YOLOv8-v2.4',
+  model_version: 'SafeOps-YOLOv8-v2.4',
   persons: [
     {
       id: 'P1',

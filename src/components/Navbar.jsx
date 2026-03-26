@@ -23,7 +23,7 @@ export default function Navbar() {
           <circle cx="10" cy="10" r="3" fill="#FF6B1A"/>
         </svg>
         <a href="#" style={{ textDecoration: 'none', color: 'inherit' }}>
-          SAFEGUARD<span>AI</span>
+          SAFEOPS<span>AI</span>
         </a>
       </div>
 

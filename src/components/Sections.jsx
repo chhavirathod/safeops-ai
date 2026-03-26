@@ -119,9 +119,9 @@ export function Footer() {
           <path d="M10 1L18 5.5V14.5L10 19L2 14.5V5.5L10 1Z" stroke="#FF6B1A" strokeWidth="1.5" fill="none"/>
           <circle cx="10" cy="10" r="3" fill="#FF6B1A"/>
         </svg>
-        SAFEGUARD<span style={{ color: '#FF6B1A' }}>AI</span>
+        SAFEOPS<span style={{ color: '#FF6B1A' }}>AI</span>
       </div>
-      <div className="footer-copy">© 2025 SafeGuardAI · Real-Time PPE Compliance Monitoring System</div>
+      <div className="footer-copy">© 2025 SafeOpsAI · Real-Time PPE Compliance Monitoring System</div>
       <div style={{ display: 'flex', gap: 24 }}>
         {['Privacy', 'Terms', 'Contact'].map(l => (
           <span key={l} style={{
