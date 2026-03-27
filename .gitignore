@@ -4,3 +4,12 @@ frontend/node_modules
 electron
 frontend/node_modules
 node_modules
+Backend/venv
+Backend/__pycache__
+Backend/.mplconfig
+Backend/.torch
+Backend/outputs
+Backend/tmp
+__pycache__
+.vscode
+outputs
