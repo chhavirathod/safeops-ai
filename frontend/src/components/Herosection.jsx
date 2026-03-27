@@ -1,20 +1,67 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import HeroCanvas from './Herocanvas'
 
 const ALERT_ROUTE = '/three.js'
+const VIDEO_PATH = '/demo-video-new.mp4'
+
+console.log('Video Path:', VIDEO_PATH, 'Full URL:', window.location.origin + VIDEO_PATH)
 
 export default function HeroSection() {
   const sectionRef = useRef(null)
   const scrollYRef = useRef(0)
   const navigate = useNavigate()
+  const [showVideoModal, setShowVideoModal] = useState(false)
 
   const { scrollY } = useScroll()
+
+  const handleWatchDemo = () => {
+    setShowVideoModal(true)
+    console.log('Video modal opened, video path:', VIDEO_PATH)
+    
+    // Test video loading and try to auto-play
+    setTimeout(() => {
+      const video = document.querySelector('video')
+      if (video) {
+        console.log('Video element found:', video)
+        console.log('Video src:', video.src)
+        console.log('Video readyState:', video.readyState)
+        console.log('Video networkState:', video.networkState)
+        
+        // Try to auto-play
+        video.play().then(() => {
+          console.log('Video started playing successfully')
+        }).catch(err => {
+          console.log('Auto-play was prevented:', err)
+        })
+      }
+    }, 500)
+  }
+
+  const handleCloseVideo = () => {
+    setShowVideoModal(false)
+  }
 
   useEffect(() => {
     return scrollY.onChange(v => { scrollYRef.current = v })
   }, [scrollY])
+
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && showVideoModal) {
+        handleCloseVideo()
+      }
+    }
+
+    if (showVideoModal) {
+      document.addEventListener('keydown', handleEscKey)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey)
+    }
+  }, [showVideoModal])
 
   return (
     <section className="hero-section" ref={sectionRef}>
@@ -66,7 +113,7 @@ export default function HeroSection() {
           <button className="btn-ghost" onClick={() => navigate(ALERT_ROUTE)}>
             Alert
           </button>
-          <button className="btn-ghost">
+          <button className="btn-ghost" onClick={handleWatchDemo}>
             Watch Demo ▶
           </button>
         </motion.div>
@@ -126,6 +173,78 @@ export default function HeroSection() {
           </div>
         ))}
       </motion.div>
+
+      {/* Video Modal */}
+      {showVideoModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
+          onClick={handleCloseVideo}
+        >
+          <div 
+            style={{
+              position: 'relative',
+              width: '95vw',
+              height: '95vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={handleCloseVideo}
+              style={{
+                position: 'absolute',
+                top: -40,
+                right: 0,
+                background: 'none',
+                border: 'none',
+                color: '#fff',
+                fontSize: 24,
+                cursor: 'pointer',
+                padding: '8px',
+              }}
+            >
+              ✕
+            </button>
+            <video
+              autoPlay
+              controls
+              muted
+              crossOrigin="anonymous"
+              preload="auto"
+              style={{
+                width: '100%',
+                height: '100%',
+                maxWidth: '95vw',
+                maxHeight: '90vh',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                backgroundColor: '#000',
+              }}
+              onLoadStart={() => console.log('Video load started')}
+              onLoadedData={() => console.log('Video data loaded')}
+              onCanPlay={() => console.log('Video can play')}
+              onError={(e) => console.error('Video error:', e)}
+              onLoadedMetadata={() => console.log('Video metadata loaded')}
+            >
+              <source src={VIDEO_PATH} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
