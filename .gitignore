@@ -18,6 +18,10 @@ __pycache__/
 # IDE
 .vscode/
 
+# Electron
+electron/
+scripts/
+
 # Large files and temp
 outputs/
 frontend/Screen Recording 2026-03-26 at 8.54.04 AM.mov
