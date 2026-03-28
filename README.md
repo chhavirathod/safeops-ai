@@ -1,4 +1,4 @@
-# SafeOps AI — PPE Compliance Monitoring System
+# SafeGuard AI — PPE Compliance Monitoring System
 
 > Real-time PPE compliance monitoring for industrial environments using computer vision, 3D simulation, and automated emergency response.
 
@@ -8,9 +8,9 @@ Built at **HackNiche 2025** · Problem Statement PS2
 
 ## Overview
 
-SafeOps AI is a web-based safety management platform for factories, recycling plants, and industrial facilities. It uses a YOLOv11-based computer vision model to detect whether workers are wearing required Personal Protective Equipment (PPE) in real time — and surfaces everything through a live supervisor dashboard, a 3D factory simulation, and an automated emergency alert system.
+SafeGuard AI is a web-based safety management platform for factories, recycling plants, and industrial facilities. It uses a YOLOv11-based computer vision model to detect whether workers are wearing required Personal Protective Equipment (PPE) in real time and surfaces everything through a live supervisor dashboard, a 3D factory simulation, and an automated emergency alert system.
 
-The system is designed with **privacy-first principles** — no facial recognition, no identity tracking. Workers are monitored purely by PPE presence or absence.
+The system is designed with **privacy-first principles**, no facial recognition, no identity tracking. Workers are monitored purely by PPE presence or absence.
 
 ---
 
@@ -171,7 +171,7 @@ SafeOps AI Mobile Application: [https://github.com/Aagnya-Mistry/Hackniche_app](
 
 ## Privacy Design
 
-SafeOps AI was built with a strict **no-identity-tracking** constraint:
+SafeGuard AI was built with a strict **no-identity-tracking** constraint:
 
 - No facial recognition at any layer of the stack
 - No biometric data collected or stored
