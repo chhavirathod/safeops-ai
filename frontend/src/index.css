@@ -2,6 +2,8 @@
    SAFEGUARD AI — CINEMATIC GLOBAL STYLES
 ═══════════════════════════════════════════════════ */
 
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Oswald:wght@200;300;400;500;600;700&display=swap');
+
 :root {
   --black: #000000;
   --near-black: #080808;
@@ -316,7 +318,7 @@ body::before {
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--orange);
-  margin-bottom: 24px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -370,7 +372,7 @@ body::before {
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--text-dim);
-  margin-top: 28px;
+  margin-top: -15px; 
   max-width: 480px;
   margin-left: auto;
   margin-right: auto;
@@ -381,7 +383,7 @@ body::before {
   display: flex;
   gap: 16px;
   justify-content: center;
-  margin-top: 40px;
+  margin-top: 5px;
   pointer-events: all;
 }
 

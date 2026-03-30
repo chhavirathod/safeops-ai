@@ -105,7 +105,7 @@ export default function LoadingScreen({ onComplete }) {
                 textTransform: 'uppercase',
                 color: 'rgba(240,237,232,0.4)'
               }}>
-                Initialising SafeGuard AI
+                Initialising SafeOps AI
               </span>
             </motion.div>
           </motion.div>

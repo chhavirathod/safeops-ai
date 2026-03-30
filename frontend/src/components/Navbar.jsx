@@ -29,7 +29,7 @@ export default function Navbar() {
           onClick={() => navigate('/')}
           style={{ textDecoration: 'none', color: 'inherit', background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }}
         >
-          SAFEGUARD<span>AI</span>
+          SAFEOPS<span>AI</span>
         </button>
       </div>
 
@@ -38,7 +38,7 @@ export default function Navbar() {
           <li key={item}>
             <button
               onClick={() => scrollToSection(item.toLowerCase())}
-              style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', padding: 0 }}
+              style={{ background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }}
             >
               {item}
             </button>

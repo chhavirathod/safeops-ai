@@ -187,7 +187,7 @@ function DetectionCanvas() {
       ctx.save()
       ctx.fillStyle = 'rgba(26,86,255,0.6)'
       ctx.font = '9px JetBrains Mono, monospace'
-      ctx.fillText(`SAFEGUARD AI v2.4 · YOLOv8-SAFETY · ${Math.round(26 + Math.sin(t) * 2)} FPS · ${Math.round(182 + Math.sin(t * 2) * 8)}ms`, 12, H - 12)
+      ctx.fillText(`SAFEOPS AI v2.4 · YOLOv8-SAFETY · ${Math.round(26 + Math.sin(t) * 2)} FPS · ${Math.round(182 + Math.sin(t * 2) * 8)}ms`, 12, H - 12)
 
       ctx.fillStyle = 'rgba(0,196,140,0.8)'
       ctx.font = 'bold 9px JetBrains Mono, monospace'

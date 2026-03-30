@@ -8,14 +8,14 @@ export function FeaturesSection() {
   const inView = useInView(ref, { once: true, margin: '-80px' })
 
   const features = [
-    { icon: '🎯', title: 'Real-Time Detection', desc: 'Sub-200ms inference on live CCTV streams. Frame-level accuracy.' },
-    { icon: '📊', title: 'Risk Scoring', desc: 'Dynamic risk score per worker. Pattern-based, not binary.' },
-    { icon: '🗺', title: 'Zone-Based Alerts', desc: 'Different PPE rules enforced per physical zone automatically.' },
-    { icon: '⏱', title: 'Temporal Tracking', desc: 'Behavioural patterns over time — not just single-frame analysis.' },
-    { icon: '💡', title: 'Lighting Adaptive', desc: 'Reliable inference in dark, dim, or overexposed environments.' },
-    { icon: '🔒', title: 'Privacy First', desc: 'Zero facial recognition. Workers are anonymous. Always.' },
-    { icon: '⚡', title: 'Edge Deployable', desc: 'Runs on-device. No cloud dependency for core detection.' },
-    { icon: '🔔', title: 'Multi-Channel Alerts', desc: 'Dashboard, SMS, alarm, and webhook integrations built-in.' },
+    { icon: <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="11" stroke="white" strokeWidth="2"/><circle cx="14" cy="14" r="3" fill="white"/><line x1="14" y1="5" x2="14" y2="3" stroke="white" strokeWidth="2"/></svg>, title: 'Real-Time Detection', desc: 'Sub-200ms inference on live CCTV streams. Frame-level accuracy.' },
+    { icon: <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="4" y="12" width="4" height="12" stroke="white" strokeWidth="2"/><rect x="12" y="6" width="4" height="18" stroke="white" strokeWidth="2"/><rect x="20" y="9" width="4" height="15" stroke="white" strokeWidth="2"/></svg>, title: 'Risk Scoring', desc: 'Dynamic risk score per worker. Pattern-based, not binary.' },
+    { icon: <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 4C19.523 4 24 8.477 24 14C24 19.523 19.523 24 14 24C8.477 24 4 19.523 4 14C4 8.477 8.477 4 14 4Z" stroke="white" strokeWidth="2"/><circle cx="14" cy="14" r="3" fill="white"/></svg>, title: 'Zone-Based Alerts', desc: 'Different PPE rules enforced per physical zone automatically.' },
+    { icon: <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="10" stroke="white" strokeWidth="2"/><line x1="14" y1="14" x2="14" y2="8" stroke="white" strokeWidth="2"/><line x1="14" y1="14" x2="18" y2="14" stroke="white" strokeWidth="2"/></svg>, title: 'Temporal Tracking', desc: 'Behavioural patterns over time — not just single-frame analysis.' },
+    { icon: <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 4C14 4 8 10 8 16C8 20.418 10.686 24 14 24C17.314 24 20 20.418 20 16C20 10 14 4 14 4Z" stroke="white" strokeWidth="2"/><circle cx="14" cy="16" r="2" fill="white"/></svg>, title: 'Lighting Adaptive', desc: 'Reliable inference in dark, dim, or overexposed environments.' },
+    { icon: <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="6" y="12" width="16" height="10" rx="2" stroke="white" strokeWidth="2"/><path d="M10 12V8C10 6.895 10.895 6 12 6H16C17.105 6 18 6.895 18 8V12" stroke="white" strokeWidth="2"/></svg>, title: 'Privacy First', desc: 'Zero facial recognition. Workers are anonymous. Always.' },
+    { icon: <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 2L24 8V14C24 20.627 14 26 14 26C14 26 4 20.627 4 14V8L14 2Z" stroke="white" strokeWidth="2" fill="none"/></svg>, title: 'Edge Deployable', desc: 'Runs on-device. No cloud dependency for core detection.' },
+    { icon: <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 4C14 4 9 6 9 12C9 16 12 20 14 24C16 20 19 16 19 12C19 6 14 4 14 4Z" stroke="white" strokeWidth="2"/><circle cx="14" cy="12" r="2" fill="white"/></svg>, title: 'Multi-Channel Alerts', desc: 'Dashboard, SMS, alarm, and webhook integrations built-in.' },
   ]
 
   return (
@@ -121,9 +121,9 @@ export function Footer() {
           <path d="M10 1L18 5.5V14.5L10 19L2 14.5V5.5L10 1Z" stroke="#FF6B1A" strokeWidth="1.5" fill="none"/>
           <circle cx="10" cy="10" r="3" fill="#FF6B1A"/>
         </svg>
-        SAFEGUARD<span style={{ color: '#FF6B1A' }}>AI</span>
+        SAFEOPS<span style={{ color: '#FF6B1A' }}>AI</span>
       </div>
-      <div className="footer-copy">© 2025 SafeGuardAI · Real-Time PPE Compliance Monitoring System</div>
+      <div className="footer-copy">© 2025 SafeOpsAI · Real-Time PPE Compliance Monitoring System</div>
       <div style={{ display: 'flex', gap: 24 }}>
         {['Privacy', 'Terms', 'Contact'].map(l => (
           <span key={l} style={{

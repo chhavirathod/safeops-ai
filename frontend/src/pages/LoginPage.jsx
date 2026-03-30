@@ -150,7 +150,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, letterSpacing: '0.1em', color: '#F0EDE8' }}>
-            SAFEGUARD<span style={{ color: '#FF6B1A' }}>AI</span>
+            SAFEOPS<span style={{ color: '#FF6B1A' }}>AI</span>
           </span>
         </div>
 
@@ -355,13 +355,12 @@ export default function LoginPage() {
           color: 'rgba(240,237,232,0.15)',
           textAlign: 'center',
         }}>
-          SAFEGUARD AI · INDUSTRIAL SAFETY PLATFORM · v2.4
+          SAFEOPS AI · INDUSTRIAL SAFETY PLATFORM · v2.4
         </div>
       </motion.div>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&family=Oswald:wght@200;300;400;500;600;700&display=swap');
       `}</style>
     </div>
   )
