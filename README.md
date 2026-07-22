@@ -194,3 +194,5 @@ Optimising the YOLO model for deployment on Jetson Nano / Raspberry Pi, allowing
 
 **Shift-Level Compliance Heatmaps**
 Persistent spatial heatmaps showing which areas of the factory floor have the highest violation frequency over time, enabling management to restructure gear stations and zone protocols based on data.
+
+Video Demo: https://drive.google.com/drive/folders/1Oe9v1wYkiadEotVaMLaBiswlDaIIeC6H
