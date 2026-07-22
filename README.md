@@ -194,14 +194,3 @@ Optimising the YOLO model for deployment on Jetson Nano / Raspberry Pi, allowing
 
 **Shift-Level Compliance Heatmaps**
 Persistent spatial heatmaps showing which areas of the factory floor have the highest violation frequency over time, enabling management to restructure gear stations and zone protocols based on data.
-
----
-
-## Team
-
-Built at HackNiche 2025
-
-- **Kabir Mathur** - CV Model, Backend, Three.js Setup · [@kabir-999](https://github.com/kabir-999)
-- **Aagnya Mistry** - Flutter Mobile App, n8n Workflow · [@Aagnya-Mistry](https://github.com/Aagnya-Mistry)
-- **Chhavi Rathod** - Frontend, Supabase Setup . [@chhavirathod](https://github.com/chhavirathod)
-- **Aayush Chaudhari** - CV Model, Dashboard . [@aayushhh-operator](https://github.com/aayushhh-operator)
